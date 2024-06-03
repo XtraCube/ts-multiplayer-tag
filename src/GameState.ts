@@ -11,7 +11,7 @@ class GameState {
         this.players = new Map();
         this.state = "lobby";
         this.message = "Waiting for players to join..."
-        this.timer = new CustomTimer(this.startGameTimeout, 5000);
+        this.timer = new CustomTimer(()=>{}, 5000);
     }
 
     serialize() {
@@ -31,11 +31,6 @@ class GameState {
         } else if (this.state === "game") {
             this.message = "";
         }
-    }
-
-    startGameTimeout(){
-        this.state = "game";
-        this.message = "Game started!";
     }
 
     addPlayer(socketId: string, player: Player) {
