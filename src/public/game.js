@@ -1,3 +1,6 @@
+import { Application, BitmapFont, BitmapText, GraphicsContext, Graphics, AlphaFilter } from "./pixi.mjs";
+import { GlowFilter } from "./pixi-filters.mjs";
+
 // Dictionary to store players by socket id
 const players = new Map();
 
@@ -14,15 +17,45 @@ const Movement = {
     Right: 3
 };
 
+const gameState = {
+    state: "lobby",
+    message: "Waiting for players...",
+}
+
 // speed for interpolation and radius for render
 // can be overriden by server
 let speed = 1.5;
 let radius = 75;
 
 // create pixi app for rendering
-const app = new PIXI.Application();
+const app = new Application();
 await app.init({ width: 3840, height: 2160, backgroundColor: 0x28323c});
 document.body.appendChild(app.canvas);
+
+
+ // pre install
+ BitmapFont.install({
+    name: 'myFont',
+    style:{
+        fontFamily: 'Arial',
+        fill: 0xF0F0F0,
+        fontSize: 100,
+        align: 'center',
+    }
+ })
+
+
+const messageText = new BitmapText({
+    text: gameState.message,
+    style: {
+        fontFamily: 'myFont',
+        fontSize: 100,
+    }
+});
+messageText.anchor.set(0.5);
+messageText.position.set(app.screen.width / 2, 4*app.screen.height / 5);
+app.stage.addChild(messageText);
+
 
 function resize() {
     if (window.innerWidth / 3840 < window.innerHeight / 2160){
@@ -61,39 +94,50 @@ app.ticker.add(() => {
 });
 
 // player template using GraphicsContext for performance
-const playerTemplate = new PIXI.GraphicsContext().circle(0, 0, radius).fill('white').stroke({color:0xAAAAAA,width:radius/5});
+const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').stroke({color:0xAAAAAA,width:radius/5});
 
 
 // connect via websocket
-const socket = new WebSocket('ws://localhost:3000/ws');
+const socket = new WebSocket(window.location.href+'/ws');
 
 // recieve a message from the server
 socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
     switch (message.type) {
+        case 'state':
+            gameState.state = message.data.state;
+            gameState.message = message.data.message;
+            messageText.text = gameState.message;
+            break;
         case 'config':
             speed = message.data.speed;
             radius = message.data.radius;
             break;
-
-        case 'join':
-            var player = message.data;
-            players.set(player.id, player);
-            player.sprite = new PIXI.Graphics(playerTemplate);
-            player.sprite.tint = parseInt(player.color, 16);
-            app.stage.addChild(player.sprite);
-            break;
         case 'leave':
-            player.sprite.delete();
-            players.delete(message.id);
+            var player = players.get(message.data);
+            if (!player) return;
+            player.sprite.destroy();
+            players.delete(message.data);
             break;
         case 'update':
             var player = players.get(message.data.id);
-            if (player) {
-                Object.assign(player, message.data);
-                console.log(player.lastUpdate)
-                player.lastUpdate = 0;
+            if (!player) {
+                player = message.data;
+                player.sprite = new Graphics(playerTemplate);
+                player.sprite.tint = parseInt(player.color, 16);
+                player.sprite.filters = [ new GlowFilter({ alpha:0, distance: 15, outerStrength: 10, color:0xff0000 }) ];
+                players.set(player.id, player);
+                app.stage.addChild(player.sprite);
             }
+            Object.assign(player, message.data);
+            player.lastUpdate = 0;
+            player.sprite.visible = !player.eliminated;
+            if (player.tagger) {
+                player.sprite.filters[0].alpha = player.tagAlpha;
+            } else {
+                player.sprite.filters[0].alpha = 0;
+            }
+            
             break;
         default:
             console.error('Unknown message type:', message.type);

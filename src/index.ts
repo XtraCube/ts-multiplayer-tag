@@ -36,7 +36,7 @@ const Movement = {
 const gameState = new GameState();
 
 var engine = Engine.create({
-    enableSleeping: true,
+    enableSleeping: false,
     gravity: { x: 0, y: 0 }        
 });
 
@@ -45,6 +45,28 @@ var runner = Runner.create({
     isFixed: true,
     enabled: true
 });
+
+Events.on(engine, "collisionStart", (event) => {
+    var pairs = event.pairs;
+    pairs.forEach(pair => {
+        var player1 = gameState.getPlayerByBody(pair.bodyA.id);
+        var player2 = gameState.getPlayerByBody(pair.bodyB.id);
+        if (player1 && player2){
+            if ( (player1.tagger && player1.canTag()) && !player2.tagger ) {
+                player1.tagger = false;
+                player2.tagger = true;
+                player2.tagTimer.start();
+            }
+            else if ( (player2.tagger && player2.canTag()) && !player1.tagger ) {
+                player2.tagger = false;
+                player1.tagger = true;
+                player1.tagTimer.start();
+            }
+        }
+    })
+    
+});
+
 
 Events.on(runner, "tick", () => {
     gameState.players.forEach(player => {
@@ -58,6 +80,8 @@ Events.on(runner, "tick", () => {
 
 // this solution is decent, but i'd like to find a better one
 Events.on(runner, "afterTick", () => {
+    gameState.update();
+    app.server?.publish("game", JSON.stringify({ type: 'state', data: gameState.serialize()}));
     gameState.players.forEach(player => {
         if (player.body.position.x > WIDTH) {
             Body.setPosition(player.body, { x: WIDTH, y: player.body.position.y });
@@ -78,7 +102,6 @@ Events.on(runner, "afterTick", () => {
 
 Runner.run(runner, engine);
 
-
 const app = new Elysia()
 .get('/', ( ) =>{
     return Bun.file('src/public/index.html');
@@ -86,15 +109,16 @@ const app = new Elysia()
 .get('/game.js', ( ) =>{
     return Bun.file('src/public/game.js');
 })
+.get('/pixi.mjs', ( ) =>{
+    return Bun.file('src/public/pixi.mjs');
+})
+.get('/pixi-filters.mjs', ( ) =>{
+    return Bun.file('src/public/pixi-filters.mjs');
+})
 .ws('/ws', {
     body: MESSAGE_SCHEMA,
     open(ws) {
         ws.subscribe("game");
-
-        gameState.players.forEach(player => {
-            ws.send({ type: 'join', data: player.serialize() });
-        });
-
         const body = Bodies.circle( Math.random()*WIDTH , Math.random()*HEIGHT , radius, {
             frictionAir: friction,
             mass: mass,
@@ -104,8 +128,6 @@ const app = new Elysia()
         gameState.addPlayer(ws.id, player);
 
         Composite.add(engine.world, body);
-        app.server?.publish('game',JSON.stringify({type: 'join', data: player.serialize()}));
-
     },
     message(ws, { type, data }) {
         switch (type) {
@@ -142,6 +164,7 @@ const app = new Elysia()
             Composite.remove(engine.world, body);
         }
         gameState.removePlayer(ws.id);
+        app.server?.publish("game", JSON.stringify({ type: 'leave', data: ws.id }));
     }
 })
 .listen(PORT);
