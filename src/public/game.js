@@ -47,13 +47,14 @@ document.body.appendChild(app.canvas);
 
 const messageText = new BitmapText({
     text: gameState.message,
+    zIndex: 1,
     style: {
         fontFamily: 'myFont',
         fontSize: 100,
     }
 });
 messageText.anchor.set(0.5);
-messageText.position.set(app.screen.width / 2, 4*app.screen.height / 5);
+messageText.position.set(app.screen.width / 2, 150);
 app.stage.addChild(messageText);
 
 
@@ -98,7 +99,7 @@ const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').
 
 
 // connect via websocket
-const socket = new WebSocket(window.location.href+'/ws');
+const socket = new WebSocket(window.location.href+'ws');
 
 // recieve a message from the server
 socket.addEventListener("message", event => {

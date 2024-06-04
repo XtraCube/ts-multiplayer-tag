@@ -7,7 +7,7 @@ class GameState {
     private message: string;
     private startTimer: CustomTimer;
     private gameTimer: CustomTimer;
-    private minPlayers: number = 4;
+    private minPlayers: number = 2;
     public players: Map<string, Player>;
 
     constructor() {
