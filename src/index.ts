@@ -1,4 +1,5 @@
 import { Elysia, t } from 'elysia';
+import { staticPlugin } from '@elysiajs/static'
 import { Player }  from "./shared/Player.js";
 import { GameState } from './GameState.js';
 import { Engine, Events, Runner, Bodies, Body, Composite, Vector } from 'matter-js';
@@ -17,12 +18,12 @@ const MESSAGE_SCHEMA = t.Object({
 });
 
 // define game bound information
-const WIDTH = 3840;
-const HEIGHT = 2160;
+const WIDTH = 1920;
+const HEIGHT = 1080;
 
 // define player information
-const speed = .5;
-const radius = 75;
+const speed = .25;
+const radius = 40;
 const mass = 50;
 const friction = 0.15 * TICK_RATE/60; // friction is affected by tick rate
 
@@ -51,16 +52,16 @@ Events.on(engine, "collisionStart", (event) => {
     pairs.forEach(pair => {
         var player1 = gameState.getPlayerByBody(pair.bodyA.id);
         var player2 = gameState.getPlayerByBody(pair.bodyB.id);
+        if (player1?.eliminated || player2?.eliminated) return;
+
         if (player1 && player2){
             if ( (player1.tagger && player1.canTag()) && !player2.tagger ) {
                 player1.tagger = false;
                 player2.tagger = true;
-                player2.tagTimer.start();
             }
             else if ( (player2.tagger && player2.canTag()) && !player1.tagger ) {
                 player2.tagger = false;
                 player1.tagger = true;
-                player1.tagTimer.start();
             }
         }
     })
@@ -103,18 +104,7 @@ Events.on(runner, "afterTick", () => {
 Runner.run(runner, engine);
 
 const app = new Elysia()
-.get('/', ( ) =>{
-    return Bun.file('src/public/index.html');
-})
-.get('/game.js', ( ) =>{
-    return Bun.file('src/public/game.js');
-})
-.get('/pixi.mjs', ( ) =>{
-    return Bun.file('src/public/pixi.mjs');
-})
-.get('/pixi-filters.mjs', ( ) =>{
-    return Bun.file('src/public/pixi-filters.mjs');
-})
+.use(staticPlugin({assets: 'src/public', prefix: ''}))
 .ws('/ws', {
     body: MESSAGE_SCHEMA,
     open(ws) {
@@ -124,13 +114,17 @@ const app = new Elysia()
             mass: mass,
             inverseMass: 1 / mass
         });
-        const player = new Player(ws.id, body, false, false);
+        const player = new Player(ws.id, body);
         gameState.addPlayer(ws.id, player);
 
         Composite.add(engine.world, body);
     },
     message(ws, { type, data }) {
         switch (type) {
+            case 'ping':
+                ws.send({ type: 'pong', data: data });
+                break;
+
             case 'update':
                 var player = gameState.getPlayer(ws.id);
                 if (!player) return;
@@ -140,16 +134,16 @@ const app = new Elysia()
                 data.forEach((key: number) => {
                     switch (key) {
                         case Movement.Up:
-                            yForce -= speed;
+                            yForce -= 1;
                             break;
                         case Movement.Down:
-                            yForce += speed;
+                            yForce += 1;
                             break;
                         case Movement.Left:
-                            xForce -= speed;
+                            xForce -= 1;
                             break;
                         case Movement.Right:
-                            xForce += speed;
+                            xForce += 1;
                             break;
                     }
                 });
@@ -168,5 +162,6 @@ const app = new Elysia()
     }
 })
 .listen(PORT);
+
 
 console.log(`Server is running on ${app.server?.url}`);

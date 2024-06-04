@@ -1,44 +1,32 @@
 class CustomTimer {
     public readonly totalTime: number;
-    private lastTime: number;
-    private remaining: number;
+    private _timeout: Timer | undefined;
+    private _startTime: number;
     private callback: () => void;
 
     constructor(callback: () => void, delay: number) {
         this.callback = callback;
-        this.lastTime = Date.now();
-        this.remaining = -1;
         this.totalTime = delay;
-        setInterval(this.update.bind(this), 0);
+        this._startTime = Date.now();
+        this._timeout = undefined;
     }
 
-    private update(){
-        if (this.remaining >= 0) {
-            const deltaTime = Date.now() - this.lastTime;
-            this.lastTime = Date.now();
-            this.remaining -= deltaTime;
-            
-            if (this.remaining < 0) {
-                this.callback();
-            }
-        }
+    public get remaining() : number {
+        return this.totalTime - this.elapsed;
     }
 
-    start() {
-        this.remaining = this.totalTime;
-        this.lastTime = Date.now();
+    public get elapsed() : number{
+        return Math.min(this.totalTime, Date.now() - this._startTime);
     }
 
-    stop() {
-        this.remaining = -1;
+    public start() {
+        clearTimeout(this._timeout);
+        this._startTime = Date.now();
+        this._timeout = setTimeout(this.callback, this.totalTime);
     }
 
-    setCallback(callback: () => void) {
-        this.callback = callback;
-    }
-
-    getTimeLeft() {
-        return this.remaining;
+    public stop() {
+        clearTimeout(this._timeout);
     }
 }
 

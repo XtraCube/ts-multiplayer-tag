@@ -1,5 +1,5 @@
-function random(array: Array<any>) {
+function randomItem<T>(array: Array<T>) {
     return array[Math.floor((Math.random()*array.length))];
 }
 
-export { random as randomItem }
+export { randomItem }

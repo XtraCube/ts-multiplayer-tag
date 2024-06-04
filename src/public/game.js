@@ -4,11 +4,6 @@ import { GlowFilter } from "./pixi-filters.mjs";
 // Dictionary to store players by socket id
 const players = new Map();
 
-// send movement per second
-const SEND_RATE = 60;
-
-const INTEROPOLATE = false;
-
 // movement "enum"
 const Movement = {
     Up: 0,
@@ -17,19 +12,18 @@ const Movement = {
     Right: 3
 };
 
-const gameState = {
+var gameState = {
     state: "lobby",
     message: "Waiting for players...",
+    winner: undefined
 }
 
-// speed for interpolation and radius for render
 // can be overriden by server
-let speed = 1.5;
-let radius = 75;
+let radius = 40;
 
 // create pixi app for rendering
 const app = new Application();
-await app.init({ width: 3840, height: 2160, backgroundColor: 0x28323c});
+await app.init({ width: 1920, height: 1080, antialias: false, powerPreference:'low-power', backgroundColor: 0x28323c});
 document.body.appendChild(app.canvas);
 
 
@@ -39,7 +33,7 @@ document.body.appendChild(app.canvas);
     style:{
         fontFamily: 'Arial',
         fill: 0xF0F0F0,
-        fontSize: 100,
+        fontSize: 50,
         align: 'center',
     }
  })
@@ -50,13 +44,25 @@ const messageText = new BitmapText({
     zIndex: 1,
     style: {
         fontFamily: 'myFont',
-        fontSize: 100,
+        fontSize: 50,
     }
 });
 messageText.anchor.set(0.5);
-messageText.position.set(app.screen.width / 2, 150);
+messageText.position.set(app.screen.width / 2, 50);
 app.stage.addChild(messageText);
 
+const pingText = new BitmapText({
+    text: "Ping: 0 ms",
+    zIndex: 1,
+    style: {
+        align: 'right',
+        fontFamily: 'myFont',
+        fontSize: 30,
+    }
+});
+pingText.anchor.set(1);
+pingText.position.set(app.screen.width-15, 50);
+app.stage.addChild(pingText);
 
 function resize() {
     if (window.innerWidth / 3840 < window.innerHeight / 2160){
@@ -71,26 +77,27 @@ function resize() {
 addEventListener("resize", resize);
 resize();
 
-function lerp(start, end, time) {
-    return start * (1 - time) + end * time;
-}
 
 // "game loop" to update player positions from network
 app.ticker.add(() => {
     // Update player positions
     players.forEach(player => {
-        if (player.position && player.sprite) {
-            player.previousPosition = player.position;
-            var pos = player.position;
-            if (INTEROPOLATE) {
-                pos = {
-                    x: lerp(player.previousPosition.x, player.position.x, player.lastUpdate / 60),
-                    y: lerp(player.previousPosition.y, player.position.y, player.lastUpdate / 60)
-                }
-            }
-            player.sprite.position.set(pos.x, pos.y)
-        }
         player.lastUpdate += app.ticker.deltaTime;
+        if (player.sprite) {
+            player.sprite.visible = !player.eliminated;
+
+            if (player.position) {
+                let pos = player.position;
+                player.sprite.position.set(pos.x, pos.y)
+            }
+            if (gameState.winner && player.id === gameState.winner) {
+                player.sprite.filters[0].color = 0xffB060;
+                player.sprite.filters[0].alpha = 1;
+            } {
+                player.sprite.filters[0].color = 0xff6060;
+                player.sprite.filters[0].alpha = player.tagAlpha;
+            }
+        }        
     });
 });
 
@@ -99,19 +106,28 @@ const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').
 
 
 // connect via websocket
-const socket = new WebSocket(window.location.href+'ws');
+const socket = new WebSocket(`ws://${window.location.host}/ws`);
+
+// ping server every second
+setInterval(() => {
+    socket.send({ type: 'ping', data: Date.now() });
+}, 1000);
+
 
 // recieve a message from the server
 socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
     switch (message.type) {
+        case 'pong':
+            const client_ack_ts = Date.now();
+            let latency = client_ack_ts - message.data;
+            pingText.text = `Ping: ${latency} ms`;
+            break;
         case 'state':
-            gameState.state = message.data.state;
-            gameState.message = message.data.message;
+            gameState = message.data;
             messageText.text = gameState.message;
             break;
         case 'config':
-            speed = message.data.speed;
             radius = message.data.radius;
             break;
         case 'leave':
@@ -126,18 +142,12 @@ socket.addEventListener("message", event => {
                 player = message.data;
                 player.sprite = new Graphics(playerTemplate);
                 player.sprite.tint = parseInt(player.color, 16);
-                player.sprite.filters = [ new GlowFilter({ alpha:0, distance: 15, outerStrength: 10, color:0xff0000 }) ];
+                player.sprite.filters = [ new GlowFilter({ alpha:0, distance: 50, outerStrength: 2, color:0xff6060 }) ];
                 players.set(player.id, player);
                 app.stage.addChild(player.sprite);
             }
             Object.assign(player, message.data);
             player.lastUpdate = 0;
-            player.sprite.visible = !player.eliminated;
-            if (player.tagger) {
-                player.sprite.filters[0].alpha = player.tagAlpha;
-            } else {
-                player.sprite.filters[0].alpha = 0;
-            }
             
             break;
         default:
