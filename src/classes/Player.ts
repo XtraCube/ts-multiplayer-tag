@@ -1,5 +1,5 @@
 import 'matter-js';
-import { CustomTimer } from '../CustomTimer';
+import { CustomTimer } from './CustomTimer';
 
 class Player {
 

@@ -1,15 +1,16 @@
 import { Elysia, t } from 'elysia';
 import { staticPlugin } from '@elysiajs/static'
-import { Player }  from "./shared/Player.js";
-import { GameState } from './GameState.js';
+import { Player }  from "./classes/Player.js";
+import { MapObject } from './classes/MapObject.js';
+import { GameState } from './classes/GameState.js';
 import { Engine, Events, Runner, Bodies, Body, Composite, Vector } from 'matter-js';
 
 // DEFINE SERVER CONSTANTS
 const PORT = Number(process.env['PORT'] ?? 3000);
 
-// tick rate doesnt actually seem to affect the amount of times the server sends updates
-// no idea why but you can play with this if you want
-const TICK_RATE = 60;
+// tick rate only affects the update rate of the server
+// not the physics engine
+const TICK_RATE = 20;
 
 // message schema for all websocket messages
 const MESSAGE_SCHEMA = t.Object({
@@ -22,10 +23,10 @@ const WIDTH = 1920;
 const HEIGHT = 1080;
 
 // define player information
-const speed = .25;
+const speed = 1;
 const radius = 40;
 const mass = 50;
-const friction = 0.15 * TICK_RATE/60; // friction is affected by tick rate
+const friction = 0.15;
 
 const Movement = {
     Up: 0,
@@ -36,16 +37,22 @@ const Movement = {
 
 const gameState = new GameState();
 
-var engine = Engine.create({
+const mapObjects: MapObject[] = [
+    new MapObject('gray', Bodies.rectangle(400, 400, 100, 100,  { isStatic: true })),
+    new MapObject('gray', Bodies.rectangle(1600, 100, 50, 600, { isStatic: true }))
+]
+
+const engine = Engine.create({
     enableSleeping: false,
     gravity: { x: 0, y: 0 }        
 });
 
-var runner = Runner.create({
-    delta: 1000 / TICK_RATE,
+const runner = Runner.create({
+    delta: 1000 / 60,
     isFixed: true,
-    enabled: true
 });
+
+Composite.add(engine.world, mapObjects.map(obj => obj.body));
 
 Events.on(engine, "collisionStart", (event) => {
     var pairs = event.pairs;
@@ -64,25 +71,18 @@ Events.on(engine, "collisionStart", (event) => {
                 player1.tagger = true;
             }
         }
-    })
-    
+    })    
 });
-
 
 Events.on(runner, "tick", () => {
     gameState.players.forEach(player => {
-        // i have no idea why TICK_RATE/(engine.timing.lastDelta) works, but it does
-        // it scales the force to function the same at any tick rate
-        // the reason i multiply friction as well is because friction is also affected by tick rate
-        // this seemed to be the best way to keep the game consistent at any tick rate
-        Body.applyForce(player.body, player.body.position, Vector.mult(player.force, TICK_RATE/(engine.timing.lastDelta)));
+        Body.applyForce(player.body, player.body.position, player.force);
     });
 });
 
 // this solution is decent, but i'd like to find a better one
 Events.on(runner, "afterTick", () => {
     gameState.update();
-    app.server?.publish("game", JSON.stringify({ type: 'state', data: gameState.serialize()}));
     gameState.players.forEach(player => {
         if (player.body.position.x > WIDTH) {
             Body.setPosition(player.body, { x: WIDTH, y: player.body.position.y });
@@ -96,19 +96,19 @@ Events.on(runner, "afterTick", () => {
         else if (player.body.position.y < 0) {
             Body.setPosition(player.body, { x: player.body.position.x, y: 0 });
         }
-        // im not sure if spamming clients with update messages is the best solution but it seems to work
-        app.server?.publish("game", JSON.stringify({ type: 'update', data: player.serialize()}));
     });
 });
 
 Runner.run(runner, engine);
 
 const app = new Elysia()
-.use(staticPlugin({assets: 'src/public', prefix: ''}))
+.use(staticPlugin({assets: 'src/public', prefix:'', noCache: true}))
 .ws('/ws', {
     body: MESSAGE_SCHEMA,
     open(ws) {
         ws.subscribe("game");
+        ws.send({ type: 'config', data: { tickRate: TICK_RATE, radius: radius } });
+        ws.send({ type: 'map', data: mapObjects.map(obj => obj.serialize()) })
         const body = Bodies.circle( Math.random()*WIDTH , Math.random()*HEIGHT , radius, {
             frictionAir: friction,
             mass: mass,
@@ -162,6 +162,14 @@ const app = new Elysia()
     }
 })
 .listen(PORT);
+
+setInterval(() => {
+    app.server?.publish("game", JSON.stringify({ type: 'state', data: gameState.serialize()}));
+    gameState.players.forEach(player => {
+        app.server?.publish("game", JSON.stringify({ type: 'update', data: player.serialize()}));
+    });
+}, 1000 / TICK_RATE);
+
 
 
 console.log(`Server is running on ${app.server?.url}`);

@@ -1,5 +1,5 @@
-import { Player } from "./shared/Player";
-import { CustomTimer } from "./CustomTimer";
+import { Player } from "./classes/Player.ts";
+import { CustomTimer } from "./classes/CustomTimer.ts";
 import { randomItem } from "./utils.ts";
 
 class GameState {

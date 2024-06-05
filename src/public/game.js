@@ -18,8 +18,12 @@ var gameState = {
     winner: undefined
 }
 
+const INTEROPOLATE = true;
+
 // can be overriden by server
-let radius = 40;
+var radius = 40;
+var tickRate = 30;
+var interpRate = 60/tickRate;
 
 // create pixi app for rendering
 const app = new Application();
@@ -28,7 +32,7 @@ document.body.appendChild(app.canvas);
 
 
  // pre install
- BitmapFont.install({
+BitmapFont.install({
     name: 'myFont',
     style:{
         fontFamily: 'Arial',
@@ -78,16 +82,28 @@ addEventListener("resize", resize);
 resize();
 
 
+function lerp(start, end, time) {
+    return start * (1 - time) + end * time;
+}
+
 // "game loop" to update player positions from network
 app.ticker.add(() => {
+
     // Update player positions
     players.forEach(player => {
         player.lastUpdate += app.ticker.deltaTime;
+
         if (player.sprite) {
             player.sprite.visible = !player.eliminated;
 
             if (player.position) {
-                let pos = player.position;
+                var pos = player.position;
+                if (INTEROPOLATE) {
+                    pos = {
+                        x: lerp(player.previousPosition.x, player.position.x, player.lastUpdate / interpRate),
+                        y: lerp(player.previousPosition.y, player.position.y, player.lastUpdate / interpRate)
+                    }
+                }
                 player.sprite.position.set(pos.x, pos.y)
             }
             if (gameState.winner && player.id === gameState.winner) {
@@ -119,6 +135,7 @@ socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
     switch (message.type) {
         case 'pong':
+            console.log('Ping:', Date.now(), message.data, 'ms');
             let latency = Date.now() - message.data;
             pingText.text = `Ping: ${latency} ms`;
             break;
@@ -128,6 +145,8 @@ socket.addEventListener("message", event => {
             break;
         case 'config':
             radius = message.data.radius;
+            tickRate = message.data.tickRate;
+            interpRate = 65 / tickRate;
             break;
         case 'leave':
             var player = players.get(message.data);
@@ -145,12 +164,13 @@ socket.addEventListener("message", event => {
                 players.set(player.id, player);
                 app.stage.addChild(player.sprite);
             }
+            player.previousPosition = player.position;
             Object.assign(player, message.data);
             player.lastUpdate = 0;
             
             break;
         default:
-            console.error('Unknown message type:', message.type);
+            console.error('Unknown message type:', message.type, "data:", message.data);
     }
 });
 
