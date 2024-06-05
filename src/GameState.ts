@@ -9,12 +9,13 @@ class GameState {
     private _endTimer: CustomTimer;
     private _gameTimer: CustomTimer;
     private _minPlayers: number = 4;
-    private _winner: string | undefined;
+    private _winner: string;
     public players: Map<string, Player>;
 
     constructor() {
         this.players = new Map();
         this._state = "lobby";
+        this._winner = "none";
         this._message = "Waiting for players to join..."
         this._startTimer = new CustomTimer(this.startGame.bind(this), 5000);
         this._endTimer = new CustomTimer(this.goToLobby.bind(this), 5000);
@@ -75,7 +76,7 @@ class GameState {
 
     goToLobby() {
         this._state = "lobby";
-        this._winner = undefined;
+        this._winner = "none";
         if (this.players.size >= this._minPlayers) {
             this._startTimer.start();
         }
@@ -86,7 +87,7 @@ class GameState {
 
         this._state = "end";
         this._message = "Game over!";
-        this._winner = winner;
+        this._winner = winner ? winner : "none";
 
         this.players.forEach(player => {
             player.tagger = player.eliminated = false;

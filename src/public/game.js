@@ -93,7 +93,7 @@ app.ticker.add(() => {
             if (gameState.winner && player.id === gameState.winner) {
                 player.sprite.filters[0].color = 0xffB060;
                 player.sprite.filters[0].alpha = 1;
-            } {
+            } else {
                 player.sprite.filters[0].color = 0xff6060;
                 player.sprite.filters[0].alpha = player.tagAlpha;
             }
@@ -119,8 +119,7 @@ socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
     switch (message.type) {
         case 'pong':
-            const client_ack_ts = Date.now();
-            let latency = client_ack_ts - message.data;
+            let latency = Date.now() - message.data;
             pingText.text = `Ping: ${latency} ms`;
             break;
         case 'state':
