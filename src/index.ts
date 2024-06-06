@@ -54,7 +54,7 @@ const mapObjects: MapObject[] = [
     new MapObject('gray', Bodies.rectangle(1600, 540, 30, 700, { isStatic: true })),
     new MapObject('gray', Bodies.rectangle(850, 300, 30, 300, { isStatic: true })),
     new MapObject('gray', Bodies.rectangle(900, 900, 700, 30, { isStatic: true })),
-    new MapObject('gray', Bodies.rectangle(400, 600, 800, 30, { isStatic: true })),
+    new MapObject('gray', Bodies.rectangle(400, 650, 800, 30, { isStatic: true })),
 ]
 
 const engine = Engine.create({
