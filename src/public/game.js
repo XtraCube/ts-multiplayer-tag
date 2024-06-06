@@ -25,11 +25,32 @@ var radius = 40;
 var tickRate = 30;
 var interpRate = 65/tickRate;
 
+var PING_INTERVAL = 500;
 var latency = 0;
 
 // create pixi app for rendering
 const app = new Application();
-await app.init({ width: 1920, height: 1080, antialias: false, powerPreference:'low-power', backgroundColor: 0x28323c});
+await app.init({ 
+    width: 1920, 
+    height: 1080, 
+    antialias: false,
+    powerPreference:'low-power',
+    backgroundColor: 0x28323c,
+    resolution: 0.5
+});
+
+function resize() {
+    if (window.innerWidth / 1920 < window.innerHeight / 1080){
+        app.canvas.style.width = "80%"
+        app.canvas.style.height = "auto"
+    } else {
+        app.canvas.style.height = "80%"
+        app.canvas.style.width = "auto"
+    }    
+}
+
+addEventListener("resize", resize);
+resize();
 
 const texture = await Assets.load('grid.png');
 
@@ -76,21 +97,20 @@ const pingText = new BitmapText({
     }
 });
 pingText.anchor.set(1);
-pingText.position.set(app.screen.width-15, 50);
+pingText.position.set(app.screen.width-30, 60);
 app.stage.addChild(pingText);
 
-function resize() {
-    if (window.innerWidth / 3840 < window.innerHeight / 2160){
-        app.canvas.style.width = "80%"
-        app.canvas.style.height = "auto"
-    } else {
-        app.canvas.style.height = "80%"
-        app.canvas.style.width = "auto"
-    }    
-}
-
-addEventListener("resize", resize);
-resize();
+const fpsText = new BitmapText({
+    text: "FPS",
+    zIndex: 1,
+    style: {
+        align: 'left',
+        fontFamily: 'myFont',
+        fontSize: 30,
+    }
+});
+fpsText.position.set(30, 30);
+app.stage.addChild(fpsText);
 
 
 function lerp(start, end, time) {
@@ -104,6 +124,7 @@ app.ticker.add(() => {
     var time = Date.now();
     // Update player positions
     players.forEach(player => {
+        player.lastUpdate += app.ticker.deltaTime;
         if (player.sprite) {
             player.sprite.visible = !player.eliminated;
 
@@ -128,7 +149,6 @@ app.ticker.add(() => {
                 player.sprite.filters[0].alpha = 0;
             }
         }        
-        player.lastUpdate += app.ticker.deltaTime;
     });
     pingText.tint = latency < 50 ? 0x60FF60 : latency < 100 ? 0xFFFF60 : 0xFF6060;
 });
@@ -143,7 +163,7 @@ const socket = new WebSocket("/ws");
 setInterval(() => {
     if (socket.readyState !== WebSocket.OPEN) return;
     socket.send(JSON.stringify({ type: 'ping', data: Date.now() }));
-}, 1000);
+}, PING_INTERVAL);
 
 
 // recieve a message from the server
@@ -153,6 +173,7 @@ socket.addEventListener("message", event => {
         case 'pong':
             latency = Date.now() - message.data;
             pingText.text = `Ping: ${latency} ms`;
+            fpsText.text = `${Math.round(app.ticker.FPS)} FPS`;
             break;
         case 'map':
             mapObjects.forEach(obj => obj.destroy());
@@ -190,7 +211,13 @@ socket.addEventListener("message", event => {
                 player.sprite = new Graphics(playerTemplate);
                 player.sprite.tint = parseInt(player.color, 16);
                 player.sprite.filters = [ 
-                    new GlowFilter({ alpha:0, distance: 50, outerStrength: 2, color:0xff6060 })
+                    new GlowFilter({ 
+                        alpha:0,
+                        distance: radius*2, 
+                        outerStrength: 2,
+                        color:0xff6060,
+                        antialias: false 
+                    })
                 ];
                 players.set(player.id, player);
                 app.stage.addChild(player.sprite);
