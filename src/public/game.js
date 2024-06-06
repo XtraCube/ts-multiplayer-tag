@@ -164,7 +164,22 @@ app.ticker.add(() => {
 const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').stroke({color:0xAAAAAA,width:radius/5});
 
 // connect via websocket
-const socket = new WebSocket("/ws");
+
+var wsUrl;
+
+switch (window.location.protocol) {
+    case 'http:':
+        wsUrl = 'ws://' + window.location.host + '/ws';
+        break;
+    case 'https:':
+        wsUrl = 'wss://' + window.location.host + '/ws';
+        break;
+    default:
+        console.error('Unknown protocol:', window.location.protocol);
+        break;
+}
+
+const socket = new WebSocket(wsUrl);
 
 // ping server every second
 setInterval(() => {
