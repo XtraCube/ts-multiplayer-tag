@@ -28,6 +28,14 @@ var interpRate = 65/tickRate;
 var PING_INTERVAL = 500;
 var latency = 0;
 
+var slider = document.getElementById("res");
+var span = document.getElementById("resVal");
+
+slider.oninput = function() {
+    span.innerHTML = this.value;
+    app.renderer.resolution = this.value/100;
+}
+
 // create pixi app for rendering
 const app = new Application();
 await app.init({ 
@@ -36,7 +44,6 @@ await app.init({
     antialias: false,
     powerPreference:'low-power',
     backgroundColor: 0x28323c,
-    resolution: 0.5
 });
 
 function resize() {

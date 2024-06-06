@@ -6,6 +6,8 @@
     body { 
         margin: 0;   /* Remove body margins */
         overflow: hidden;
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
     }
     canvas {
         position: absolute;
@@ -13,11 +15,18 @@
         left: 50%;
         transform: translate(-50%, -50%);
     }
+    p {
+        display:inline-block;
+    }
     </style>
     <script src="pixi.mjs" type="module"></script>
     <script src="pixi-filters.mjs" type="module"></script>
 </head>
 <body>
+    <div>
+        <p> resolution: <span id="resVal">100</span></p>
+        <input type="range" min="20" max="100" value="100" class="slider" id="res">
+    </div>
     <script src="game.js" type="module"></script>
 </body>
 </html>
