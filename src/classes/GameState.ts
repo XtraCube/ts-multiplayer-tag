@@ -1,6 +1,6 @@
-import { Player } from "./classes/Player.ts";
-import { CustomTimer } from "./classes/CustomTimer.ts";
-import { randomItem } from "./utils.ts";
+import { Player } from "./Player.ts";
+import { CustomTimer } from "./CustomTimer.ts";
+import { randomItem } from "../utils.ts";
 
 class GameState {
     private _state: "lobby" | "game" | "end";
@@ -8,7 +8,7 @@ class GameState {
     private _startTimer: CustomTimer;
     private _endTimer: CustomTimer;
     private _gameTimer: CustomTimer;
-    private _minPlayers: number = 4;
+    private _minPlayers: number = 2;
     private _winner: string;
     public players: Map<string, Player>;
 
@@ -19,7 +19,7 @@ class GameState {
         this._message = "Waiting for players to join..."
         this._startTimer = new CustomTimer(this.startGame.bind(this), 5000);
         this._endTimer = new CustomTimer(this.goToLobby.bind(this), 5000);
-        this._gameTimer = new CustomTimer(this.eliminatePlayer.bind(this), 10000);
+        this._gameTimer = new CustomTimer(this.eliminatePlayer.bind(this), 15000);
     }
 
     startGame() {

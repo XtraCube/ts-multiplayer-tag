@@ -1,8 +1,10 @@
-import { Application, BitmapFont, BitmapText, GraphicsContext, Graphics, AlphaFilter } from "./pixi.mjs";
+import { Application, Assets, BitmapFont, BitmapText, GraphicsContext, Graphics, TilingSprite } from "./pixi.mjs";
 import { GlowFilter } from "./pixi-filters.mjs";
 
 // Dictionary to store players by socket id
 const players = new Map();
+
+const mapObjects = [];
 
 // movement "enum"
 const Movement = {
@@ -28,8 +30,18 @@ var interpRate = 60/tickRate;
 // create pixi app for rendering
 const app = new Application();
 await app.init({ width: 1920, height: 1080, antialias: false, powerPreference:'low-power', backgroundColor: 0x28323c});
-document.body.appendChild(app.canvas);
 
+const texture = await Assets.load('grid.png');
+
+const tilingSprite = new TilingSprite({
+    texture,
+    width: app.screen.width,
+    height: app.screen.height,
+});
+
+app.stage.addChild(tilingSprite);
+
+document.body.appendChild(app.canvas);
 
  // pre install
 BitmapFont.install({
@@ -41,7 +53,6 @@ BitmapFont.install({
         align: 'center',
     }
  })
-
 
 const messageText = new BitmapText({
     text: gameState.message,
@@ -107,7 +118,7 @@ app.ticker.add(() => {
                 player.sprite.position.set(pos.x, pos.y)
             }
             if (gameState.winner && player.id === gameState.winner) {
-                player.sprite.filters[0].color = 0xffB060;
+                player.sprite.filters[0].color = 0x60FF60;
                 player.sprite.filters[0].alpha = 1;
             } else {
                 player.sprite.filters[0].color = 0xff6060;
@@ -119,7 +130,6 @@ app.ticker.add(() => {
 
 // player template using GraphicsContext for performance
 const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').stroke({color:0xAAAAAA,width:radius/5});
-
 
 // connect via websocket
 const socket = new WebSocket(`ws://${window.location.host}/ws`);
@@ -138,6 +148,20 @@ socket.addEventListener("message", event => {
             console.log('Ping:', Date.now(), message.data, 'ms');
             let latency = Date.now() - message.data;
             pingText.text = `Ping: ${latency} ms`;
+            break;
+        case 'map':
+            mapObjects.forEach(obj => obj.destroy());
+            mapObjects.length = 0;
+            mapObjects.push(...message.data);
+            mapObjects.forEach(obj => {
+                var graphics = new Graphics()
+                .rect(obj.x, obj.y, obj.width, obj.height)
+                .fill(obj.color)
+                .stroke({color:obj.strokeColor,width:obj.strokeWidth});
+                graphics.pivot.set(obj.width/2, obj.height/2);
+                app.stage.addChild(graphics);
+                mapObjects.push(graphics);
+            });
             break;
         case 'state':
             gameState = message.data;

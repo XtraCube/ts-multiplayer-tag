@@ -38,8 +38,13 @@ const Movement = {
 const gameState = new GameState();
 
 const mapObjects: MapObject[] = [
-    new MapObject('gray', Bodies.rectangle(400, 400, 100, 100,  { isStatic: true })),
-    new MapObject('gray', Bodies.rectangle(1600, 100, 50, 600, { isStatic: true }))
+    new MapObject('#966446', Bodies.rectangle(400, 400, 100, 100,  { isStatic: true }), '#452f21', 10),
+    new MapObject('#966446', Bodies.rectangle(1770, 640, 120, 120,  { isStatic: true }), '#452f21', 10),
+    new MapObject('#966446', Bodies.rectangle(1300, 350, 150, 150,  { isStatic: true }), '#452f21', 10),
+    new MapObject('gray', Bodies.rectangle(1600, 540, 30, 700, { isStatic: true })),
+    new MapObject('gray', Bodies.rectangle(850, 300, 30, 300, { isStatic: true })),
+    new MapObject('gray', Bodies.rectangle(900, 900, 700, 30, { isStatic: true })),
+    new MapObject('gray', Bodies.rectangle(400, 600, 800, 30, { isStatic: true })),
 ]
 
 const engine = Engine.create({
@@ -84,17 +89,17 @@ Events.on(runner, "tick", () => {
 Events.on(runner, "afterTick", () => {
     gameState.update();
     gameState.players.forEach(player => {
-        if (player.body.position.x > WIDTH) {
-            Body.setPosition(player.body, { x: WIDTH, y: player.body.position.y });
+        if (player.body.position.x > WIDTH - radius) {
+            Body.setPosition(player.body, { x: WIDTH-radius, y: player.body.position.y });
         }
-        else if (player.body.position.x < 0) {
-            Body.setPosition(player.body, { x: 0, y: player.body.position.y });
+        else if (player.body.position.x < radius) {
+            Body.setPosition(player.body, { x: radius, y: player.body.position.y });
         }
-        if (player.body.position.y > HEIGHT) {
-            Body.setPosition(player.body, { x: player.body.position.x, y: HEIGHT });
+        if (player.body.position.y > HEIGHT - radius) {
+            Body.setPosition(player.body, { x: player.body.position.x, y: HEIGHT-radius });
         }
-        else if (player.body.position.y < 0) {
-            Body.setPosition(player.body, { x: player.body.position.x, y: 0 });
+        else if (player.body.position.y < radius) {
+            Body.setPosition(player.body, { x: player.body.position.x, y: radius });
         }
     });
 });
@@ -169,7 +174,5 @@ setInterval(() => {
         app.server?.publish("game", JSON.stringify({ type: 'update', data: player.serialize()}));
     });
 }, 1000 / TICK_RATE);
-
-
 
 console.log(`Server is running on ${app.server?.url}`);
