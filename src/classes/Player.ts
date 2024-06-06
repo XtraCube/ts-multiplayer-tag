@@ -53,9 +53,9 @@ class Player {
             id: this.id,
             color: this._color,
             position: this.body.position,
+            velocity: this.body.velocity,
             tagger: this.tagger,
-            eliminated: this.eliminated,
-            tagAlpha: this.tagger ? (this._tagTimer.elapsed / this._tagTimer.totalTime): 0
+            eliminated: this.eliminated
         };
     }
 }

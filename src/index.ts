@@ -10,7 +10,7 @@ const PORT = Number(process.env['PORT'] ?? 3000);
 
 // tick rate only affects the update rate of the server
 // not the physics engine
-const TICK_RATE = 20;
+const TICK_RATE = 30;
 
 // message schema for all websocket messages
 const MESSAGE_SCHEMA = t.Object({
@@ -38,9 +38,19 @@ const Movement = {
 const gameState = new GameState();
 
 const mapObjects: MapObject[] = [
+    // outer walls
+    new MapObject('gray', Bodies.rectangle(WIDTH / 2, 0, WIDTH, 30, { isStatic: true })), // top
+    new MapObject('gray', Bodies.rectangle(WIDTH / 2, HEIGHT, WIDTH, 30, { isStatic: true })), // bottom
+    new MapObject('gray', Bodies.rectangle(0, HEIGHT / 2, 30, HEIGHT, { isStatic: true })), // left
+    new MapObject('gray', Bodies.rectangle(WIDTH, HEIGHT / 2, 30, HEIGHT, { isStatic: true })), // right
+
+    // obstacles
     new MapObject('#966446', Bodies.rectangle(400, 400, 100, 100,  { isStatic: true }), '#452f21', 10),
     new MapObject('#966446', Bodies.rectangle(1770, 640, 120, 120,  { isStatic: true }), '#452f21', 10),
     new MapObject('#966446', Bodies.rectangle(1300, 350, 150, 150,  { isStatic: true }), '#452f21', 10),
+    new MapObject('#966446', Bodies.rectangle(250, 850, 150, 150,  { isStatic: true }), '#452f21', 10),
+    
+    // inner walls
     new MapObject('gray', Bodies.rectangle(1600, 540, 30, 700, { isStatic: true })),
     new MapObject('gray', Bodies.rectangle(850, 300, 30, 300, { isStatic: true })),
     new MapObject('gray', Bodies.rectangle(900, 900, 700, 30, { isStatic: true })),
@@ -85,25 +95,6 @@ Events.on(runner, "tick", () => {
     });
 });
 
-// this solution is decent, but i'd like to find a better one
-Events.on(runner, "afterTick", () => {
-    gameState.update();
-    gameState.players.forEach(player => {
-        if (player.body.position.x > WIDTH - radius) {
-            Body.setPosition(player.body, { x: WIDTH-radius, y: player.body.position.y });
-        }
-        else if (player.body.position.x < radius) {
-            Body.setPosition(player.body, { x: radius, y: player.body.position.y });
-        }
-        if (player.body.position.y > HEIGHT - radius) {
-            Body.setPosition(player.body, { x: player.body.position.x, y: HEIGHT-radius });
-        }
-        else if (player.body.position.y < radius) {
-            Body.setPosition(player.body, { x: player.body.position.x, y: radius });
-        }
-    });
-});
-
 Runner.run(runner, engine);
 
 const app = new Elysia()
@@ -121,7 +112,6 @@ const app = new Elysia()
         });
         const player = new Player(ws.id, body);
         gameState.addPlayer(ws.id, player);
-
         Composite.add(engine.world, body);
     },
     message(ws, { type, data }) {
@@ -169,6 +159,7 @@ const app = new Elysia()
 .listen(PORT);
 
 setInterval(() => {
+    gameState.update();
     app.server?.publish("game", JSON.stringify({ type: 'state', data: gameState.serialize()}));
     gameState.players.forEach(player => {
         app.server?.publish("game", JSON.stringify({ type: 'update', data: player.serialize()}));

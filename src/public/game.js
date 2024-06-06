@@ -20,12 +20,12 @@ var gameState = {
     winner: undefined
 }
 
-const INTEROPOLATE = true;
-
 // can be overriden by server
 var radius = 40;
 var tickRate = 30;
-var interpRate = 60/tickRate;
+var interpRate = 65/tickRate;
+
+var latency = 0;
 
 // create pixi app for rendering
 const app = new Application();
@@ -97,22 +97,23 @@ function lerp(start, end, time) {
     return start * (1 - time) + end * time;
 }
 
+const INTEROPOLATE = true;
+
 // "game loop" to update player positions from network
 app.ticker.add(() => {
-
+    var time = Date.now();
     // Update player positions
     players.forEach(player => {
-        player.lastUpdate += app.ticker.deltaTime;
-
         if (player.sprite) {
             player.sprite.visible = !player.eliminated;
 
             if (player.position) {
                 var pos = player.position;
                 if (INTEROPOLATE) {
+                    var alpha = player.lastUpdate / interpRate;
                     pos = {
-                        x: lerp(player.previousPosition.x, player.position.x, player.lastUpdate / interpRate),
-                        y: lerp(player.previousPosition.y, player.position.y, player.lastUpdate / interpRate)
+                        x: player.position.x + player.velocity.x * alpha,
+                        y: player.position.y + player.velocity.y * alpha
                     }
                 }
                 player.sprite.position.set(pos.x, pos.y)
@@ -120,23 +121,28 @@ app.ticker.add(() => {
             if (gameState.winner && player.id === gameState.winner) {
                 player.sprite.filters[0].color = 0x60FF60;
                 player.sprite.filters[0].alpha = 1;
-            } else {
+            } else if (player.tagger) {
                 player.sprite.filters[0].color = 0xff6060;
-                player.sprite.filters[0].alpha = player.tagAlpha;
+                player.sprite.filters[0].alpha = Math.min((time - player.tagStart) / 1000, 1);
+            } else {
+                player.sprite.filters[0].alpha = 0;
             }
         }        
+        player.lastUpdate += app.ticker.deltaTime;
     });
+    pingText.tint = latency < 50 ? 0x60FF60 : latency < 100 ? 0xFFFF60 : 0xFF6060;
 });
 
 // player template using GraphicsContext for performance
 const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').stroke({color:0xAAAAAA,width:radius/5});
 
 // connect via websocket
-const socket = new WebSocket(`ws://${window.location.host}/ws`);
+const socket = new WebSocket("/ws");
 
 // ping server every second
 setInterval(() => {
-    socket.send({ type: 'ping', data: Date.now() });
+    if (socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: 'ping', data: Date.now() }));
 }, 1000);
 
 
@@ -145,8 +151,7 @@ socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
     switch (message.type) {
         case 'pong':
-            console.log('Ping:', Date.now(), message.data, 'ms');
-            let latency = Date.now() - message.data;
+            latency = Date.now() - message.data;
             pingText.text = `Ping: ${latency} ms`;
             break;
         case 'map':
@@ -184,11 +189,16 @@ socket.addEventListener("message", event => {
                 player = message.data;
                 player.sprite = new Graphics(playerTemplate);
                 player.sprite.tint = parseInt(player.color, 16);
-                player.sprite.filters = [ new GlowFilter({ alpha:0, distance: 50, outerStrength: 2, color:0xff6060 }) ];
+                player.sprite.filters = [ 
+                    new GlowFilter({ alpha:0, distance: 50, outerStrength: 2, color:0xff6060 })
+                ];
                 players.set(player.id, player);
                 app.stage.addChild(player.sprite);
             }
-            player.previousPosition = player.position;
+            if (!player.tagStart || (player.tagger != message.data.tagger)) {
+                player.tagStart = Date.now();
+            }
+
             Object.assign(player, message.data);
             player.lastUpdate = 0;
             
