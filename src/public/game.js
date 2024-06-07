@@ -34,6 +34,7 @@ var span = document.getElementById("resVal");
 slider.oninput = function() {
     span.innerHTML = this.value;
     app.renderer.resolution = this.value/100;
+    app.stage.position.set(0,0);
 }
 
 // create pixi app for rendering

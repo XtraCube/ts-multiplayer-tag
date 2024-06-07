@@ -19,7 +19,7 @@ class GameState {
         this._message = "Waiting for players to join..."
         this._startTimer = new CustomTimer(this.startGame.bind(this), 5000);
         this._endTimer = new CustomTimer(this.goToLobby.bind(this), 5000);
-        this._gameTimer = new CustomTimer(this.eliminatePlayer.bind(this), 15000);
+        this._gameTimer = new CustomTimer(this.eliminatePlayer.bind(this), 10000);
     }
 
     startGame() {
