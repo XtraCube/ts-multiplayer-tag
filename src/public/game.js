@@ -133,7 +133,25 @@ app.ticker.add(() => {
     players.forEach(player => {
         player.lastUpdate += app.ticker.deltaTime;
         if (player.sprite) {
-            player.sprite.visible = !player.eliminated;
+            if (player.eliminated) {
+                if (!socket.id){
+                    player.sprite.visible = false;
+                    return;
+                }
+
+                console.log(players[socket.id]);
+                if (players[socket.id]?.eliminated) {
+                    player.sprite.visible = true;
+                    player.sprite.alpha = 0.5;
+                } else {
+                    player.sprite.visible = false;
+                }
+            } else {
+                player.sprite.alpha = 1;
+                player.sprite.visible = true;
+            }
+
+            //player.sprite.visible = !player.eliminated;
 
             if (player.position) {
                 var pos = player.position;
@@ -192,6 +210,9 @@ setInterval(() => {
 socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
     switch (message.type) {
+        case 'init':
+            socket.id = message.data;
+            break;
         case 'pong':
             latency = Date.now() - message.data;
             pingText.text = `Ping: ${latency} ms`;
@@ -218,7 +239,7 @@ socket.addEventListener("message", event => {
         case 'config':
             radius = message.data.radius;
             tickRate = message.data.tickRate;
-            interpRate = 65 / tickRate;
+            interpRate = 60 / tickRate;
             break;
         case 'leave':
             var player = players.get(message.data);

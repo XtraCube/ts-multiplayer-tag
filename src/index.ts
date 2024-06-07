@@ -103,6 +103,7 @@ const app = new Elysia()
     body: MESSAGE_SCHEMA,
     open(ws) {
         ws.subscribe("game");
+        ws.send({ type: 'init', data: { id: ws.id } });
         ws.send({ type: 'config', data: { tickRate: TICK_RATE, radius: radius } });
         ws.send({ type: 'map', data: mapObjects.map(obj => obj.serialize()) })
         const body = Bodies.circle( Math.random()*WIDTH , Math.random()*HEIGHT , radius, {
