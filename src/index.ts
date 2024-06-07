@@ -130,26 +130,7 @@ const app = new Elysia()
             case 'update':
                 var player = gameState.getPlayer(ws.id);
                 if (!player) return;
-
-                var xForce = 0;
-                var yForce = 0;
-                data.forEach((key: number) => {
-                    switch (key) {
-                        case Movement.Up:
-                            yForce -= 1;
-                            break;
-                        case Movement.Down:
-                            yForce += 1;
-                            break;
-                        case Movement.Left:
-                            xForce -= 1;
-                            break;
-                        case Movement.Right:
-                            xForce += 1;
-                            break;
-                    }
-                });
-                player.force = Vector.mult(Vector.normalise(Vector.create(xForce, yForce)), speed);
+                player.force = Vector.mult(Vector.normalise(Vector.create(data.x, data.y)), speed);
 
                 break;
         }

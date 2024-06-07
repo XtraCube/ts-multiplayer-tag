@@ -8,10 +8,10 @@ const mapObjects = [];
 
 // movement "enum"
 const Movement = {
-    Up: 0,
+    Up: -1,
     Down: 1,
-    Left: 2,
-    Right: 3
+    Left: -1,
+    Right: 1
 };
 
 var gameState = {
@@ -281,86 +281,98 @@ socket.addEventListener("message", event => {
 });
 
 // input setup
-const keys = window.keys = new Set();
-window.prevKeys = new Set();
+const xKeys = window.xKeys = new Set();
+const yKeys = window.yKeys = new Set();
+
+window.pXKeys = new Set();
+window.pYKeys = new Set();
+
 
 const eqSet = (xs, ys) =>
     xs.size === ys.size &&
     [...xs].every((x) => ys.has(x));
 
-
 // input handling
 document.addEventListener("keydown", function ({ key, code }) {
     switch (key) {
         case "ArrowUp":
-            keys.add(Movement.Up);
+            yKeys.add(Movement.Up);
             break;
         case "ArrowDown":
-            keys.add(Movement.Down);
+            yKeys.add(Movement.Down);
             break;
         case "ArrowLeft":
-            keys.add(Movement.Left);
+            xKeys.add(Movement.Left);
             break;
         case "ArrowRight":
-            keys.add(Movement.Right);
+            xKeys.add(Movement.Right);
             break;
     }
     switch (code) {
         case "KeyW":
-            keys.add(Movement.Up);
+            yKeys.add(Movement.Up);
             break;
         case "KeyS":
-            keys.add(Movement.Down);
+            yKeys.add(Movement.Down);
             break;
         case "KeyA":
-            keys.add(Movement.Left);
+            xKeys.add(Movement.Left);
             break;
         case "KeyD":
-            keys.add(Movement.Right);
+            xKeys.add(Movement.Right);
             break;
     }
-    if (window.keys && window.prevKeys && !eqSet(window.keys, window.prevKeys)){
-        window.prevKeys = new Set(window.keys);
+    if (!eqSet(window.xKeys, window.pXKeys) || !eqSet(window.yKeys, window.pYKeys)) {
+        window.pXKeys = new Set(window.xKeys);
+        window.pYKeys = new Set(window.yKeys);
         socket.send(JSON.stringify({
             type: 'update',
-            data: Array.from(keys)
+            data: { 
+                x: Array.from(xKeys).reduce((partialSum, a) => partialSum + a, 0), 
+                y: Array.from(yKeys).reduce((partialSum, a) => partialSum + a, 0)
+            }
         }));
     }
 });
 document.addEventListener("keyup", function ({ key, code }) {
     switch (key) {
         case "ArrowUp":
-            keys.delete(Movement.Up);
+            yKeys.delete(Movement.Up);
             break;
         case "ArrowDown":
-            keys.delete(Movement.Down);
+            yKeys.delete(Movement.Down);
             break;
         case "ArrowLeft":
-            keys.delete(Movement.Left);
+            xKeys.delete(Movement.Left);
             break;
         case "ArrowRight":
-            keys.delete(Movement.Right);
+            xKeys.delete(Movement.Right);
             break;
     }
     switch (code) {
         case "KeyW":
-            keys.delete(Movement.Up);
+            yKeys.delete(Movement.Up);
             break;
         case "KeyS":
-            keys.delete(Movement.Down);
+            yKeys.delete(Movement.Down);
             break;
         case "KeyA":
-            keys.delete(Movement.Left);
+            xKeys.delete(Movement.Left);
             break;
         case "KeyD":
-            keys.delete(Movement.Right);
+            xKeys.delete(Movement.Right);
             break;
     }
-    if (window.keys && window.prevKeys && !eqSet(window.keys, window.prevKeys)){
-        window.prevKeys = new Set(window.keys);
+    
+    if (!eqSet(window.xKeys, window.pXKeys) || !eqSet(window.yKeys, window.pYKeys)) {
+        window.pXKeys = new Set(window.xKeys);
+        window.pYKeys = new Set(window.yKeys);
         socket.send(JSON.stringify({
             type: 'update',
-            data: Array.from(keys)
+            data: { 
+                x: Array.from(xKeys).reduce((partialSum, a) => partialSum + a, 0), 
+                y: Array.from(yKeys).reduce((partialSum, a) => partialSum + a, 0)
+            }
         }));
     }
 });
