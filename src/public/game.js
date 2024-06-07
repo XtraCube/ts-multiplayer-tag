@@ -296,6 +296,20 @@ const eqSet = (xs, ys) =>
     xs.size === ys.size &&
     [...xs].every((x) => ys.has(x));
 
+function sendInput() {
+    if (!eqSet(window.xKeys, window.pXKeys) || !eqSet(window.yKeys, window.pYKeys)) {
+        window.pXKeys = new Set(window.xKeys);
+        window.pYKeys = new Set(window.yKeys);
+        socket.send(JSON.stringify({
+            type: 'update',
+            data: { 
+                x: Array.from(xKeys).reduce((partialSum, a) => partialSum + a, 0), 
+                y: Array.from(yKeys).reduce((partialSum, a) => partialSum + a, 0)
+            }
+        }));
+    }
+}
+
 // input handling
 document.addEventListener("keydown", function ({ key, code }) {
     switch (key) {
@@ -326,17 +340,7 @@ document.addEventListener("keydown", function ({ key, code }) {
             xKeys.add(Movement.Right);
             break;
     }
-    if (!eqSet(window.xKeys, window.pXKeys) || !eqSet(window.yKeys, window.pYKeys)) {
-        window.pXKeys = new Set(window.xKeys);
-        window.pYKeys = new Set(window.yKeys);
-        socket.send(JSON.stringify({
-            type: 'update',
-            data: { 
-                x: Array.from(xKeys).reduce((partialSum, a) => partialSum + a, 0), 
-                y: Array.from(yKeys).reduce((partialSum, a) => partialSum + a, 0)
-            }
-        }));
-    }
+    sendInput();
 });
 document.addEventListener("keyup", function ({ key, code }) {
     switch (key) {
@@ -367,16 +371,5 @@ document.addEventListener("keyup", function ({ key, code }) {
             xKeys.delete(Movement.Right);
             break;
     }
-    
-    if (!eqSet(window.xKeys, window.pXKeys) || !eqSet(window.yKeys, window.pYKeys)) {
-        window.pXKeys = new Set(window.xKeys);
-        window.pYKeys = new Set(window.yKeys);
-        socket.send(JSON.stringify({
-            type: 'update',
-            data: { 
-                x: Array.from(xKeys).reduce((partialSum, a) => partialSum + a, 0), 
-                y: Array.from(yKeys).reduce((partialSum, a) => partialSum + a, 0)
-            }
-        }));
-    }
+    sendInput();
 });
