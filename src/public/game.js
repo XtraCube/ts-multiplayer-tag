@@ -45,7 +45,11 @@ await app.init({
     antialias: false,
     powerPreference:'low-power',
     backgroundColor: 0x28323c,
+    resolution: 0.75,
 });
+
+slider.value = app.renderer.resolution*100;
+span.innerHTML = slider.value;
 
 function resize() {
     if (window.innerWidth / 1920 < window.innerHeight / 1080){

@@ -28,13 +28,6 @@ const radius = 40;
 const mass = 50;
 const friction = 0.15;
 
-const Movement = {
-    Up: 0,
-    Down: 1,
-    Left: 2,
-    Right: 3
-};
-
 const gameState = new GameState();
 
 const mapObjects: MapObject[] = [
