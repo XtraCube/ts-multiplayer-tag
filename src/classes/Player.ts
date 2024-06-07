@@ -41,7 +41,9 @@ class Player {
 
     public set eliminated(value: boolean) {
         this._eliminated = value;
-        this.body.collisionFilter.category = value ? 0x0002 : 0x0001;
+        this.body.collisionFilter.group = value ? 1 : 2;
+        this.body.collisionFilter.category = value ? 2 : 1;
+        this.body.collisionFilter.mask = value ? 2 : 1;
     }
 
     public canTag() : boolean {

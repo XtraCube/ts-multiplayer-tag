@@ -39,23 +39,29 @@ const gameState = new GameState();
 
 const mapObjects: MapObject[] = [
     // outer walls
-    new MapObject('gray', Bodies.rectangle(WIDTH / 2, 0, WIDTH, 30, { isStatic: true })), // top
-    new MapObject('gray', Bodies.rectangle(WIDTH / 2, HEIGHT, WIDTH, 30, { isStatic: true })), // bottom
-    new MapObject('gray', Bodies.rectangle(0, HEIGHT / 2, 30, HEIGHT, { isStatic: true })), // left
-    new MapObject('gray', Bodies.rectangle(WIDTH, HEIGHT / 2, 30, HEIGHT, { isStatic: true })), // right
+    new MapObject('gray', Bodies.rectangle(WIDTH / 2, 0, WIDTH, 30)), // top
+    new MapObject('gray', Bodies.rectangle(WIDTH / 2, HEIGHT, WIDTH, 30)), // bottom
+    new MapObject('gray', Bodies.rectangle(0, HEIGHT / 2, 30, HEIGHT)), // left
+    new MapObject('gray', Bodies.rectangle(WIDTH, HEIGHT / 2, 30, HEIGHT)), // right
 
     // obstacles
-    new MapObject('#966446', Bodies.rectangle(400, 400, 100, 100,  { isStatic: true }), '#452f21', 10),
-    new MapObject('#966446', Bodies.rectangle(1770, 640, 120, 120,  { isStatic: true }), '#452f21', 10),
-    new MapObject('#966446', Bodies.rectangle(1300, 350, 150, 150,  { isStatic: true }), '#452f21', 10),
-    new MapObject('#966446', Bodies.rectangle(250, 850, 150, 150,  { isStatic: true }), '#452f21', 10),
+    new MapObject('#966446', Bodies.rectangle(400, 400, 100, 100), '#452f21', 10),
+    new MapObject('#966446', Bodies.rectangle(1770, 640, 120, 120), '#452f21', 10),
+    new MapObject('#966446', Bodies.rectangle(1300, 350, 150, 150), '#452f21', 10),
+    new MapObject('#966446', Bodies.rectangle(250, 850, 150, 150), '#452f21', 10),
     
     // inner walls
-    new MapObject('gray', Bodies.rectangle(1600, 540, 30, 700, { isStatic: true })),
-    new MapObject('gray', Bodies.rectangle(850, 300, 30, 300, { isStatic: true })),
-    new MapObject('gray', Bodies.rectangle(900, 900, 700, 30, { isStatic: true })),
-    new MapObject('gray', Bodies.rectangle(400, 650, 800, 30, { isStatic: true })),
+    new MapObject('gray', Bodies.rectangle(1600, 540, 30, 700)),
+    new MapObject('gray', Bodies.rectangle(850, 300, 30, 300)),
+    new MapObject('gray', Bodies.rectangle(900, 900, 700, 30)),
+    new MapObject('gray', Bodies.rectangle(400, 650, 800, 30)),
 ]
+
+mapObjects.forEach(obj => {
+    obj.body.isStatic = true;
+    obj.body.collisionFilter.group = 1;
+
+});
 
 const engine = Engine.create({
     enableSleeping: false,
@@ -103,7 +109,7 @@ const app = new Elysia()
     body: MESSAGE_SCHEMA,
     open(ws) {
         ws.subscribe("game");
-        ws.send({ type: 'init', data: { id: ws.id } });
+        ws.send({ type: 'init', data: ws.id });
         ws.send({ type: 'config', data: { tickRate: TICK_RATE, radius: radius } });
         ws.send({ type: 'map', data: mapObjects.map(obj => obj.serialize()) })
         const body = Bodies.circle( Math.random()*WIDTH , Math.random()*HEIGHT , radius, {

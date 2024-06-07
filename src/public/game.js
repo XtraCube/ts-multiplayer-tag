@@ -126,6 +126,8 @@ function lerp(start, end, time) {
 
 const INTEROPOLATE = true;
 
+var socketId = "";
+
 // "game loop" to update player positions from network
 app.ticker.add(() => {
     var time = Date.now();
@@ -134,13 +136,12 @@ app.ticker.add(() => {
         player.lastUpdate += app.ticker.deltaTime;
         if (player.sprite) {
             if (player.eliminated) {
-                if (!socket.id){
+                if (!socketId){
                     player.sprite.visible = false;
                     return;
                 }
 
-                console.log(players[socket.id]);
-                if (players[socket.id]?.eliminated) {
+                if (players.get(socketId)?.eliminated) {
                     player.sprite.visible = true;
                     player.sprite.alpha = 0.5;
                 } else {
@@ -211,7 +212,7 @@ socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
     switch (message.type) {
         case 'init':
-            socket.id = message.data;
+            socketId = message.data;
             break;
         case 'pong':
             latency = Date.now() - message.data;
