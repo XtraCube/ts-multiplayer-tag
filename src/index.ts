@@ -1,8 +1,8 @@
 import { Elysia, t } from 'elysia';
 import { staticPlugin } from '@elysiajs/static'
-import { Player }  from "./classes/Player.js";
-import { MapObject } from './classes/MapObject.js';
-import { GameState } from './classes/GameState.js';
+import { Player }  from "./classes/Player";
+import { MapObject } from './classes/MapObject';
+import { GameState } from './classes/GameState';
 import { Engine, Events, Runner, Bodies, Body, Composite, Vector } from 'matter-js';
 
 // DEFINE SERVER CONSTANTS

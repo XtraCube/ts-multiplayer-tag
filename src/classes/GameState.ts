@@ -1,6 +1,6 @@
-import { Player } from "./Player.ts";
-import { CustomTimer } from "./CustomTimer.ts";
-import { randomItem } from "../utils.ts";
+import { Player } from "./Player";
+import { CustomTimer } from "./CustomTimer";
+import { randomItem } from "../utils";
 
 class GameState {
     private _state: "lobby" | "game" | "end";
