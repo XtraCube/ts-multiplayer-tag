@@ -8,6 +8,7 @@
         overflow: hidden;
         font-family: Arial, Helvetica, sans-serif;
         text-align: center;
+        background-color: #334;
     }
     canvas {
         position: absolute;
@@ -18,14 +19,27 @@
     p {
         display:inline-block;
     }
+    #topBox {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 10%;
+        color: white;
+    }
+
     </style>
     <script src="pixi.mjs" type="module"></script>
     <script src="pixi-filters.mjs" type="module"></script>
 </head>
 <body>
-    <div>
+    <div id="topBox">
         <p> resolution: <span id="resVal">100</span></p>
-        <input type="range" min="20" max="100" value="100" class="slider" id="res">
+        <input type="range" min="20" max="100" value="100" class="slider" id="res"><br>
+        <input type="text" id="chatInput" placeholder="Type here...">
+        <button id="sendButton">Send</button>
+    </div>
+    <div id="chatContainer">
+
     </div>
     <script src="game.js" type="module"></script>
 </body>

@@ -145,7 +145,7 @@ app.ticker.add(() => {
     var time = Date.now();
     // Update player positions
     players.forEach(player => {
-        player.lastUpdate += app.ticker.deltaTime;
+        player.lastUpdate += app.ticker.deltaMS;
         if (player.sprite) {
             if (player.eliminated) {
                 if (!socketId){
@@ -169,7 +169,7 @@ app.ticker.add(() => {
             if (player.position) {
                 var pos = player.position;
                 if (INTEROPOLATE) {
-                    var alpha = player.lastUpdate / interpRate;
+                    var alpha = player.lastUpdate / tickRate;
                     pos = {
                         x: player.position.x + player.velocity.x * alpha,
                         y: player.position.y + player.velocity.y * alpha
