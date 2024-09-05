@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/index.js"
+    "start": "bun run ./src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -12,7 +12,8 @@
   "dependencies": {
     "@elysiajs/static": "^1.0.3",
     "elysia": "^1.0.22",
-    "matter-js": "^0.19.0"
+    "matter-js": "^0.19.0",
+    "pixi.js": "^8.1.6"
   },
   "devDependencies": {
     "@types/bun": "^1.1.3",
