@@ -124,7 +124,10 @@ const app = new Elysia()
                 var player = gameState.getPlayer(ws.id);
                 if (!player) return;
                 player.force = Vector.mult(Vector.normalise(Vector.create(data.x, data.y)), speed);
-
+                break;
+            
+            case 'chat':
+                app.server?.publish("game", JSON.stringify({ type: 'chat', data: { id: ws.id, message: data } }));
                 break;
         }
     },

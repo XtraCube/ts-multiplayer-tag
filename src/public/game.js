@@ -1,5 +1,5 @@
-import { Application, Assets, BitmapFont, BitmapText, GraphicsContext, Graphics, TilingSprite } from "./pixi.mjs";
-import { GlowFilter } from "./pixi-filters.mjs";
+import { Application, Assets, BitmapFont, BitmapText, Container, GraphicsContext, Graphics, TilingSprite, Rectangle } from "./pixi.mjs";
+import { OutlineFilter } from "./pixi-filters.mjs";
 
 // Dictionary to store players by socket id
 const players = new Map();
@@ -23,7 +23,6 @@ var gameState = {
 // can be overriden by server
 var radius = 40;
 var tickRate = 30;
-var interpRate = 65/tickRate;
 
 var PING_INTERVAL = 500;
 var latency = 0;
@@ -38,11 +37,14 @@ slider.oninput = function() {
     setCookie("res", this.value, 365);
 }
 
+const width = 1920;
+const height = 1080;
+
 // create pixi app for rendering
 const app = new Application();
 await app.init({ 
-    width: 1920, 
-    height: 1080, 
+    width: width, 
+    height: height, 
     antialias: false,
     powerPreference:'low-power',
     backgroundColor: 0x28323c,
@@ -59,7 +61,7 @@ app.renderer.resolution = slider.value/100;
 span.innerHTML = slider.value;
 
 function resize() {
-    if (window.innerWidth / 1920 < window.innerHeight / 1080){
+    if (window.innerWidth / width < window.innerHeight / height){
         app.canvas.style.width = "80%"
         app.canvas.style.height = "auto"
     } else {
@@ -146,54 +148,30 @@ app.ticker.add(() => {
     // Update player positions
     players.forEach(player => {
         player.lastUpdate += app.ticker.deltaMS;
-        if (player.sprite) {
-            if (player.eliminated) {
-                if (!socketId){
-                    player.sprite.visible = false;
-                    return;
-                }
-
-                if (players.get(socketId)?.eliminated) {
-                    player.sprite.visible = true;
-                    player.sprite.alpha = 0.5;
-                } else {
-                    player.sprite.visible = false;
-                }
-            } else {
-                player.sprite.alpha = 1;
-                player.sprite.visible = true;
-            }
+        var deltaTime = (player.lastUpdate / tickRate);
+        if (player.container) {
 
             //player.sprite.visible = !player.eliminated;
 
             if (player.position) {
                 var pos = player.position;
                 if (INTEROPOLATE) {
-                    var alpha = player.lastUpdate / tickRate;
                     pos = {
-                        x: player.position.x + player.velocity.x * alpha,
-                        y: player.position.y + player.velocity.y * alpha
+                        x: player.position.x + player.velocity.x * deltaTime,
+                        y: player.position.y + player.velocity.y * deltaTime
                     }
                 }
-                player.sprite.position.set(pos.x, pos.y)
+                player.container.position.set(pos.x, pos.y)
             }
-            if (gameState.winner && player.id === gameState.winner) {
-                player.sprite.filters[0].color = 0x60FF60;
-                player.sprite.filters[0].alpha = 1;
-            } else if (player.tagger) {
-                player.sprite.filters[0].color = 0xff6060;
-                player.sprite.filters[0].alpha = Math.min((time - player.tagStart) / 1000, 1);
-            } else {
-                player.sprite.filters[0].alpha = 0;
-            }
-        }        
+        }      
+        if (player.sprite && !(gameState.winner && player.id === gameState.winner) && player.tagger) {
+            player.sprite.filters[0].alpha = Math.min((time - player.tagStart) / 1000, 1);
+        } 
     });
-    pingText.tint = latency < 50 ? 0x60FF60 : latency < 100 ? 0xFFFF60 : 0xFF6060;
 });
 
 // player template using GraphicsContext for performance
 const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').stroke({color:0xAAAAAA,width:radius/5});
-
 // connect via websocket
 
 var wsUrl;
@@ -229,6 +207,7 @@ socket.addEventListener("message", event => {
         case 'pong':
             latency = Date.now() - message.data;
             pingText.text = `Ping: ${latency} ms`;
+            pingText.tint = latency < 50 ? 0x60FF60 : latency < 100 ? 0xFFFF60 : 0xFF6060;
             fpsText.text = `${Math.round(app.ticker.FPS)} FPS`;
             break;
         case 'map':
@@ -252,7 +231,6 @@ socket.addEventListener("message", event => {
         case 'config':
             radius = message.data.radius;
             tickRate = message.data.tickRate;
-            interpRate = 60 / tickRate;
             break;
         case 'leave':
             var player = players.get(message.data);
@@ -260,23 +238,39 @@ socket.addEventListener("message", event => {
             player.sprite.destroy();
             players.delete(message.data);
             break;
+        case 'chat':
+            var player = players.get(message.data.id);
+            if (!player) return;
+            var chatText = new BitmapText({
+                text: message.data.message,
+                zIndex: 1,
+                style: {
+                    fontFamily: 'myFont',
+                    fontSize: 30,
+                }
+            });
+            chatText.anchor.set(0.5);
+            chatText.position.set(0, -radius-20);
+            player.container.addChild(chatText);
+            setTimeout(() => chatText.destroy(), 5000);
+            break;
         case 'update':
             var player = players.get(message.data.id);
             if (!player) {
                 player = message.data;
+                player.container = new Container();
                 player.sprite = new Graphics(playerTemplate);
                 player.sprite.tint = parseInt(player.color, 16);
                 player.sprite.filters = [ 
-                    new GlowFilter({ 
+                    new OutlineFilter({ 
                         alpha:0,
-                        distance: radius*2, 
-                        outerStrength: 2,
                         color:0xff6060,
-                        antialias: false 
+                        thickness: 5,
                     })
                 ];
                 players.set(player.id, player);
-                app.stage.addChild(player.sprite);
+                player.container.addChild(player.sprite);
+                app.stage.addChild(player.container);
             }
             if (!player.tagStart || (player.tagger != message.data.tagger)) {
                 player.tagStart = Date.now();
@@ -284,12 +278,49 @@ socket.addEventListener("message", event => {
 
             Object.assign(player, message.data);
             player.lastUpdate = 0;
+
+            if (player.eliminated) {
+                if (!socketId){
+                    player.sprite.visible = false;
+                    return;
+                }
+
+                if (players.get(socketId)?.eliminated) {
+                    player.sprite.visible = true;
+                    player.sprite.alpha = 0.5;
+                } else {
+                    player.sprite.visible = false;
+                }
+            } else {
+                player.sprite.alpha = 1;
+                player.sprite.visible = true;
+            }
+
+            if (gameState.winner && player.id === gameState.winner) {
+                player.sprite.filters[0].color = 0x60FF60;
+                player.sprite.filters[0].alpha = 1;
+            } else if (player.tagger) {
+                player.sprite.filters[0].color = 0xff6060;
+            } else {
+                player.sprite.filters[0].alpha = 0;
+            }
+            
             
             break;
         default:
             console.error('Unknown message type:', message.type, "data:", message.data);
     }
 });
+
+function sendChat() {
+    var chatInput = document.getElementById("chatInput");
+    if (chatInput.value) {
+        socket.send(JSON.stringify({ type: 'chat', data: chatInput.value }));
+        chatInput.value = "";
+    }
+}
+
+document.getElementById("sendButton").addEventListener("click", sendChat);
 
 // input setup
 const xKeys = window.xKeys = new Set();
