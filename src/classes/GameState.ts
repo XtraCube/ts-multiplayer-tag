@@ -64,6 +64,7 @@ class GameState {
 
         var winner = this.checkWin();
         if (winner){
+            winner.wins++;
             this.resetGame(winner.id);
             return;
         }

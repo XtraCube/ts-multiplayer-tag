@@ -7,7 +7,9 @@ class Player {
     readonly body: Matter.Body;
 
     public force: Matter.Vector;
+    public wins: number;
 
+    public name: string = "";
     private _color: string;
     private _tagTimer: CustomTimer;
     private _tagger: boolean;
@@ -22,6 +24,7 @@ class Player {
         this._tagger = false;
         this._eliminated = false;
         this._tagTimer = new CustomTimer(()=>{}, 1000);
+        this.wins = 0;
     }
 
     public get tagger() : boolean {
@@ -53,6 +56,7 @@ class Player {
     serialize() {
         return {
             id: this.id,
+            name: this.name,
             color: this._color,
             position: this.body.position,
             velocity: this.body.velocity,

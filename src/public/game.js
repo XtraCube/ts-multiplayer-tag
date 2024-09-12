@@ -235,7 +235,7 @@ socket.addEventListener("message", event => {
         case 'leave':
             var player = players.get(message.data);
             if (!player) return;
-            player.sprite.destroy();
+            player.container.destroy();
             players.delete(message.data);
             break;
         case 'chat':
@@ -268,7 +268,19 @@ socket.addEventListener("message", event => {
                         thickness: 5,
                     })
                 ];
+                player.nameText = new BitmapText({
+                    text: player.name,
+                    zIndex: 1,
+                    style: {
+                        fontFamily: 'myFont',
+                        fontSize: 30,
+                    }
+                });
+                player.nameText.anchor.set(0.5);
+                player.nameText.position.set(0, radius+20);
+    
                 players.set(player.id, player);
+                player.container.addChild(player.nameText);
                 player.container.addChild(player.sprite);
                 app.stage.addChild(player.container);
             }
@@ -277,23 +289,24 @@ socket.addEventListener("message", event => {
             }
 
             Object.assign(player, message.data);
+            player.nameText.text = player.name;
             player.lastUpdate = 0;
 
             if (player.eliminated) {
                 if (!socketId){
-                    player.sprite.visible = false;
+                    player.container.visible = false;
                     return;
                 }
 
                 if (players.get(socketId)?.eliminated) {
-                    player.sprite.visible = true;
-                    player.sprite.alpha = 0.5;
+                    player.container.visible = true;
+                    player.container.alpha = 0.5;
                 } else {
-                    player.sprite.visible = false;
+                    player.container.visible = false;
                 }
             } else {
-                player.sprite.alpha = 1;
-                player.sprite.visible = true;
+                player.container.alpha = 1;
+                player.container.visible = true;
             }
 
             if (gameState.winner && player.id === gameState.winner) {
@@ -320,7 +333,22 @@ function sendChat() {
     }
 }
 
+function setName() {
+    var nameInput = document.getElementById("nameInput");
+    if (nameInput.value) {
+        socket.send(JSON.stringify({ type: 'name', data: nameInput.value }));
+    }
+}
+
 document.getElementById("sendButton").addEventListener("click", sendChat);
+document.getElementById("chatInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") sendChat();
+});
+
+document.getElementById("nameButton").addEventListener("click", setName);
+document.getElementById("nameInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") setName();
+});
 
 // input setup
 const xKeys = window.xKeys = new Set();

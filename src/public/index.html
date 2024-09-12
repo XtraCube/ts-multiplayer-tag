@@ -26,6 +26,16 @@
         height: 10%;
         color: white;
     }
+    #bottomBox {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 10%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
     </style>
     <script src="pixi.mjs" type="module"></script>
@@ -34,12 +44,13 @@
 <body>
     <div id="topBox">
         <p> resolution: <span id="resVal">100</span></p>
-        <input type="range" min="20" max="100" value="100" class="slider" id="res"><br>
+        <input type="range" min="20" max="100" value="100" class="slider" id="res">
+    </div>
+    <div id="bottomBox">
+        <input type="text" id="nameInput" placeholder="Set Name">
+        <button id="nameButton">Set Name</button>
         <input type="text" id="chatInput" placeholder="Type here...">
         <button id="sendButton">Send</button>
-    </div>
-    <div id="chatContainer">
-
     </div>
     <script src="game.js" type="module"></script>
 </body>
