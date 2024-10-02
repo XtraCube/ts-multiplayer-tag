@@ -147,18 +147,22 @@ app.ticker.add(() => {
     var time = Date.now();
     // Update player positions
     players.forEach(player => {
-        player.lastUpdate += app.ticker.deltaMS;
-        var deltaTime = (player.lastUpdate / tickRate);
+        var lastUpdate = (Date.now() - player.lastUpdateTimestamp) / 100;
+        var deltaTime = lastUpdate;
         if (player.container) {
 
             //player.sprite.visible = !player.eliminated;
 
             if (player.position) {
-                var pos = player.position;
-                if (INTEROPOLATE) {
+                var currentPos = player.container.position;
+                var networkPos = player.position;
+
+                var pos = networkPos;
+
+                if (INTEROPOLATE) {               
                     pos = {
-                        x: player.position.x + player.velocity.x * deltaTime,
-                        y: player.position.y + player.velocity.y * deltaTime
+                        x: lerp(currentPos.x, networkPos.x, deltaTime),
+                        y: lerp(currentPos.y, networkPos.y, deltaTime)
                     }
                 }
                 player.container.position.set(pos.x, pos.y)
@@ -290,7 +294,7 @@ socket.addEventListener("message", event => {
 
             Object.assign(player, message.data);
             player.nameText.text = player.name;
-            player.lastUpdate = 0;
+            player.lastUpdateTimestamp = Date.now();
 
             if (player.eliminated) {
                 if (!socketId){

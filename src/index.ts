@@ -127,13 +127,14 @@ const app = new Elysia()
                 break;
             
             case 'chat':
+                data = data.trim().substring(0, 200);
                 app.server?.publish("game", JSON.stringify({ type: 'chat', data: { id: ws.id, message: data } }));
                 break;
 
             case 'name':
                 var player = gameState.getPlayer(ws.id);
                 if (!player) return;
-                player.name = data;
+                player.name = data.trim().substring(0, 50);
                 app.server?.publish("game", JSON.stringify({ type: 'update', data: player.serialize()}));
                 break;
         }
