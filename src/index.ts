@@ -12,21 +12,31 @@ const PORT = Number(process.env['PORT'] ?? 3000);
 // not the physics engine
 const TICK_RATE = 30;
 
-// message schema for all websocket messages
-const MESSAGE_SCHEMA = t.Object({
-    type: t.String(),
-    data: t.Any()
-});
-
 // define game bound information
 const WIDTH = 1920;
 const HEIGHT = 1080;
 
 // define player information
-const speed = 1;
-const radius = 40;
-const mass = 50;
-const friction = 0.15;
+const SPEED = 1;
+const RADIUS = 40;
+const MASS = 50;
+const FRICTION = 0.15;
+
+// define server config to network to clients
+const SERVER_CONFIG = {
+    tickRate: TICK_RATE,
+    speed: SPEED,
+    radius: RADIUS,
+    mass: MASS,
+    friction: FRICTION,
+}
+
+
+// message schema for all websocket messages
+const MESSAGE_SCHEMA = t.Object({
+    type: t.String(),
+    data: t.Any()
+});
 
 const gameState = new GameState();
 
@@ -103,12 +113,12 @@ const app = new Elysia()
     open(ws) {
         ws.subscribe("game");
         ws.send({ type: 'init', data: ws.id });
-        ws.send({ type: 'config', data: { tickRate: TICK_RATE, radius: radius } });
+        ws.send({ type: 'config', data: SERVER_CONFIG });
         ws.send({ type: 'map', data: mapObjects.map(obj => obj.serialize()) })
-        const body = Bodies.circle( Math.random()*WIDTH , Math.random()*HEIGHT , radius, {
-            frictionAir: friction,
-            mass: mass,
-            inverseMass: 1 / mass
+        const body = Bodies.circle( Math.random()*WIDTH , Math.random()*HEIGHT , RADIUS, {
+            frictionAir: FRICTION,
+            mass: MASS,
+            inverseMass: 1 / MASS
         });
         const player = new Player(ws.id, body);
         gameState.addPlayer(ws.id, player);
@@ -123,7 +133,7 @@ const app = new Elysia()
             case 'update':
                 var player = gameState.getPlayer(ws.id);
                 if (!player) return;
-                player.force = Vector.mult(Vector.normalise(Vector.create(data.x, data.y)), speed);
+                player.force = Vector.mult(Vector.normalise(Vector.create(data.x, data.y)), SPEED);
                 break;
             
             case 'chat':
