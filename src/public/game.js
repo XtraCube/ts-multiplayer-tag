@@ -1,4 +1,4 @@
-import { Application, Assets, BitmapFont, BitmapText, Container, GraphicsContext, Graphics, TilingSprite, Rectangle } from "./pixi.mjs";
+import { Application, Assets, BitmapFont, BitmapText, Container, GraphicsContext, Graphics, TilingSprite, Ticker } from "./pixi.mjs";
 import { OutlineFilter } from "./pixi-filters.mjs";
 
 // Dictionary to store players by socket id
@@ -48,7 +48,6 @@ await app.init({
     antialias: false,
     powerPreference:'low-power',
     backgroundColor: 0x28323c,
-    resolution: 0.75,
 });
 
 if (getCookie("res")) {
@@ -147,8 +146,6 @@ app.ticker.add(() => {
     var time = Date.now();
     // Update player positions
     players.forEach(player => {
-        var lastUpdate = (Date.now() - player.lastUpdateTimestamp) / 100;
-        var deltaTime = lastUpdate;
         if (player.container) {
 
             //player.sprite.visible = !player.eliminated;
@@ -159,10 +156,14 @@ app.ticker.add(() => {
 
                 var pos = networkPos;
 
-                if (INTEROPOLATE) {               
+                if (INTEROPOLATE) {
+                    var x = (1000 / app.ticker.deltaMS);
+                    var delta = (Date.now() - player.lastUpdateTimestamp) / x;                    
+                    delta = Math.min(delta, 1);
+
                     pos = {
-                        x: lerp(currentPos.x, networkPos.x, deltaTime),
-                        y: lerp(currentPos.y, networkPos.y, deltaTime)
+                        x: lerp(currentPos.x, networkPos.x, delta),
+                        y: lerp(currentPos.y, networkPos.y, delta)
                     }
                 }
                 player.container.position.set(pos.x, pos.y)
@@ -172,6 +173,13 @@ app.ticker.add(() => {
             player.sprite.filters[0].alpha = Math.min((time - player.tagStart) / 1000, 1);
         } 
     });
+
+    if (players.has(socketId)) {
+        const player = players.get(socketId);
+        const pos = player.container.position;
+        // app.stage.position.set(app.screen.width / 2 - pos.x, app.screen.height / 2 - pos.y);
+        
+    }
 });
 
 // player template using GraphicsContext for performance
@@ -361,7 +369,6 @@ const yKeys = window.yKeys = new Set();
 window.pXKeys = new Set();
 window.pYKeys = new Set();
 
-
 const eqSet = (xs, ys) =>
     xs.size === ys.size &&
     [...xs].every((x) => ys.has(x));
@@ -370,12 +377,14 @@ function sendInput() {
     if (!eqSet(window.xKeys, window.pXKeys) || !eqSet(window.yKeys, window.pYKeys)) {
         window.pXKeys = new Set(window.xKeys);
         window.pYKeys = new Set(window.yKeys);
+        const player = players.get(socketId);
+        player.movement = {
+            x: Array.from(xKeys).reduce((partialSum, a) => partialSum + a, 0),
+            y: Array.from(yKeys).reduce((partialSum, a) => partialSum + a, 0)
+        };
         socket.send(JSON.stringify({
             type: 'update',
-            data: { 
-                x: Array.from(xKeys).reduce((partialSum, a) => partialSum + a, 0), 
-                y: Array.from(yKeys).reduce((partialSum, a) => partialSum + a, 0)
-            }
+            data: player.movement
         }));
     }
 }
@@ -439,6 +448,12 @@ document.addEventListener("keyup", function ({ key, code }) {
             break;
         case "KeyD":
             xKeys.delete(Movement.Right);
+            break;
+        case "KeyE":
+            app.ticker.maxFPS += 10;
+            break;
+        case "KeyQ":
+            app.ticker.maxFPS -= 10;
             break;
     }
     sendInput();
