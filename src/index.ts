@@ -13,14 +13,15 @@ const PORT = Number(process.env['PORT'] ?? 3001);
 const TICK_RATE = 60;
 
 // define game bound information
-const WIDTH = 16;
-const HEIGHT = 9;
+const WIDTH = 10;
+const HEIGHT = WIDTH * 9 / 16;
 
 // define player information
-const SPEED = 150;
-const RADIUS = .32;
+const SPEED = 120;
+const RADIUS = 2*WIDTH/100;
 const MASS = 1;
 const FRICTION = 0.15;
+const DAMPING = 8;
 
 // message schema for all websocket messages
 const MESSAGE_SCHEMA = t.Object({
@@ -36,17 +37,17 @@ const world = new World({
 
 });
 
-const map = MapLoader.loadMapFromJson(require('./maps/gray.json'), world);
+let map = MapLoader.loadMapFromJson(require('./maps/gray.json'), new Vec2(WIDTH, HEIGHT), world);
 
 
 world.on('begin-contact', (contact) => {
-    const fixtureA = contact.getFixtureA();
-    const fixtureB = contact.getFixtureB();
-    const bodyA = fixtureA.getBody();
-    const bodyB = fixtureB.getBody();
+    let fixtureA = contact.getFixtureA();
+    let fixtureB = contact.getFixtureB();
+    let bodyA = fixtureA.getBody();
+    let bodyB = fixtureB.getBody();
 
-    const player1 = bodyA.getUserData() as Player;
-    const player2 = bodyB.getUserData() as Player;
+    let player1 = bodyA.getUserData() as Player;
+    let player2 = bodyB.getUserData() as Player;
 
     if (player1?.eliminated || player2?.eliminated) return;
 
@@ -69,20 +70,18 @@ const app = new Elysia()
         ws.subscribe("game");
         ws.send({ type: 'init', data: ws.id });
         var mapDimensions = map.getDimensions();
-        ws.send({ type: 'config', data: { radius: RADIUS * 125, tickRate: TICK_RATE, width: mapDimensions.width, height: mapDimensions.height } });
+        ws.send({ type: 'config', data: { radius: RADIUS, tickRate: TICK_RATE, width: mapDimensions.width, height: mapDimensions.height } });
         ws.send({ type: 'map', data: map.getObjects().map(obj => obj.serialize()) })
-        const body = world.createBody({
+        let body = world.createBody({
             type: 'dynamic',
             position: Vec2(Math.random()*WIDTH, Math.random()*HEIGHT),
             fixedRotation: true,
-            linearDamping: 7,
-            angularDamping: 0.1,
+            linearDamping: DAMPING,
             allowSleep: false
         });
         body.createFixture({
             shape: new Circle(RADIUS),
             friction: FRICTION,
-            density: 1,
             restitution: 0,
         });
         body.setMassData({
@@ -91,7 +90,8 @@ const app = new Elysia()
             I: 1
         });
 
-        const player = new Player(ws.id, body);
+        let scale = Vec2(mapDimensions.width/WIDTH, mapDimensions.height/HEIGHT)
+        const player = new Player(ws.id, body, scale);
         gameState.addPlayer(ws.id, player);
     },
     message(ws, { type, data }) {
@@ -146,7 +146,7 @@ console.log(`Server is running on ${app.server?.url}`);
 
 function step() {
     gameState.players.forEach(player => {
-        player.body.applyForce(player.force, player.body.getWorldCenter(), true);
+        player.body.applyForceToCenter(player.force, true);
     });
 
     world.step(1 / 60, 10, 8);

@@ -14,8 +14,9 @@ class Player {
     private _tagTimer: CustomTimer;
     private _tagger: boolean;
     private _eliminated: boolean;
+    private _mapScale: Vec2;
 
-    constructor(id: string, body: Body) {
+    constructor(id: string, body: Body, mapScale: Vec2) {
         this.id = id;
         this.body = body;
         this.force = Vec2(0, 0);
@@ -24,6 +25,7 @@ class Player {
         this._tagger = false;
         this._eliminated = false;
         this._tagTimer = new CustomTimer(()=>{}, 1000);
+        this._mapScale = mapScale;
         this.wins = 0;
         this.body.setUserData(this);
     }
@@ -61,8 +63,8 @@ class Player {
             name: this.name,
             color: this._color,
             position: {
-                x: this.body.getPosition().x * (1920/16),
-                y: this.body.getPosition().y * (1080/9),
+                x: this.body.getPosition().x * this._mapScale.x,
+                y: this.body.getPosition().y * this._mapScale.y,
             },
             tagger: this.tagger,
             eliminated: this.eliminated

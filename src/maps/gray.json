@@ -2,6 +2,7 @@
     "name": "gray",
     "width": 1920,
     "height": 1080,
+    "wallWidth": 10,
     "objects": [
         {
             "type": "RectangleMapObject",
