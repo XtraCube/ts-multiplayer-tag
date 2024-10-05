@@ -18,7 +18,7 @@ const WIDTH = 16;
 const HEIGHT = 9;
 
 // define player information
-const SPEED = 100;
+const SPEED = 150;
 const RADIUS = .3;
 const MASS = 1;
 const FRICTION = 0.15;
@@ -53,6 +53,8 @@ const mapObjects: MapObject[] = [
     new RectangleMapObject(world, WIDTH, .3, new Vec2(WIDTH/2, HEIGHT), 0, 'gray'), // bottom
     new RectangleMapObject(world, .3, HEIGHT, new Vec2(0, HEIGHT/2), 0, 'gray'), // left
     new RectangleMapObject(world, .3, HEIGHT, new Vec2(WIDTH, HEIGHT/2), 0, 'gray'), // right
+
+    
 ];
 
 mapObjects.forEach(obj => {
