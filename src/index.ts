@@ -1,17 +1,18 @@
 import { Elysia, t } from 'elysia';
 import { staticPlugin } from '@elysiajs/static'
 import { Player }  from "./classes/Player";
-import { MapObject } from './classes/MapObject';
-import { RectangleMapObject } from './classes/RectangleMapObject.ts';
+import { MapObject } from './classes/Maps/MapObject.ts';
+import { RectangleMapObject } from './classes/Maps/RectangleMapObject.ts';
 import { GameState } from './classes/GameState';
 import { World, Vec2, Circle, } from 'planck';
+import { MapLoader } from './classes/Maps/MapLoader.ts';
 
 // DEFINE SERVER CONSTANTS
 const PORT = Number(process.env['PORT'] ?? 3000);
 
 // tick rate only affects the update rate of the server
 // not the physics engine
-const TICK_RATE = 30;
+const TICK_RATE = 60;
 
 // define game bound information
 const WIDTH = 16;
@@ -47,19 +48,8 @@ const world = new World({
 
 });
 
-const mapObjects: MapObject[] = [
-    // outer walls
-    new RectangleMapObject(world, WIDTH, .3, new Vec2(WIDTH/2, 0), 0, 'gray'), // top
-    new RectangleMapObject(world, WIDTH, .3, new Vec2(WIDTH/2, HEIGHT), 0, 'gray'), // bottom
-    new RectangleMapObject(world, .3, HEIGHT, new Vec2(0, HEIGHT/2), 0, 'gray'), // left
-    new RectangleMapObject(world, .3, HEIGHT, new Vec2(WIDTH, HEIGHT/2), 0, 'gray'), // right
+const map = MapLoader.loadMapFromJson(require('./maps/gray.json'), world);
 
-    
-];
-
-mapObjects.forEach(obj => {
-    obj.body.getFixtureList()?.setFilterGroupIndex(1);
-});
 
 world.on('begin-contact', (contact) => {
     const fixtureA = contact.getFixtureA();
@@ -91,7 +81,7 @@ const app = new Elysia()
         ws.subscribe("game");
         ws.send({ type: 'init', data: ws.id });
         ws.send({ type: 'config', data: SERVER_CONFIG });
-        ws.send({ type: 'map', data: mapObjects.map(obj => obj.serialize()) })
+        ws.send({ type: 'map', data: map.getObjects().map(obj => obj.serialize()) })
         const body = world.createBody({
             type: 'dynamic',
             position: Vec2(Math.random()*WIDTH, Math.random()*HEIGHT),

@@ -6,16 +6,16 @@ class RectangleMapObject extends MapObject {
     width: number;
     height: number;
     
-    constructor(world: World, width: number, height: number, position: Vec2, angle: number, color: string, strokeColor: string = "#000000", strokeWidth: number = 0) {
-        super(color, strokeColor, strokeWidth);
-        this.width = width;
-        this.height = height;
+    constructor(world: World, size: Vec2, position: Vec2, planckScale: Vec2, angle: number, color: string, strokeColor: string = "#000000", strokeWidth: number = 0) {
+        super(planckScale, color, strokeColor, strokeWidth);
+        this.width = size.x;
+        this.height = size.y;
 
-        var shape = new BoxShape(width/2, height/2);
+        var shape = new BoxShape(this.width*(planckScale.x)*1/2, this.height*(planckScale.y)*1/2);
 
         var body = world.createBody({
             type: 'static',
-            position: position,
+            position: new Vec2(position.x * planckScale.x, position.y * planckScale.y),
             angle: angle
         });
         body.createFixture(shape,{
@@ -30,11 +30,11 @@ class RectangleMapObject extends MapObject {
     serialize() {
         return {
             type: 'rectangle',
-            x: this.body.getPosition().x * (1920/16),
-            y: this.body.getPosition().y * (1080/9),
+            x: this.body.getPosition().x / this.planckScale.x,
+            y: this.body.getPosition().y / this.planckScale.y,
             angle: this.body.getAngle(),
-            width: this.width * (1920/16),
-            height: this.height * (1080/9),
+            width: this.width,
+            height: this.height,
             color: this.color,
             strokeColor: this.strokeColor,
             strokeWidth: this.strokeWidth

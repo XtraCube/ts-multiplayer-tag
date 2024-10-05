@@ -157,7 +157,7 @@ app.ticker.add(() => {
                 var pos = networkPos;
 
                 if (INTEROPOLATE) {
-                    var x = (1000 / app.ticker.deltaMS);
+                    var x = (1000 / app.ticker.deltaMS)/2.5;
                     var delta = (Date.now() - player.lastUpdateTimestamp) / x;                    
                     delta = Math.min(delta, 1);
 
