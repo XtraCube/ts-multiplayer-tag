@@ -147,10 +147,6 @@ class GameState {
         return this.players.get(socketId);
     }
 
-    getPlayerByBody(bodyId: number): Player | undefined {
-        return Array.from(this.players.values()).find(player => player.body.id === bodyId);
-    }
-
 }
 
 export { GameState };
