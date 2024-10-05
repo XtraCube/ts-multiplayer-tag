@@ -1,14 +1,12 @@
 import { Elysia, t } from 'elysia';
 import { staticPlugin } from '@elysiajs/static'
 import { Player }  from "./classes/Player";
-import { MapObject } from './classes/Maps/MapObject.ts';
-import { RectangleMapObject } from './classes/Maps/RectangleMapObject.ts';
 import { GameState } from './classes/GameState';
 import { World, Vec2, Circle, } from 'planck';
 import { MapLoader } from './classes/Maps/MapLoader.ts';
 
 // DEFINE SERVER CONSTANTS
-const PORT = Number(process.env['PORT'] ?? 3000);
+const PORT = Number(process.env['PORT'] ?? 3001);
 
 // tick rate only affects the update rate of the server
 // not the physics engine
@@ -20,7 +18,7 @@ const HEIGHT = 9;
 
 // define player information
 const SPEED = 150;
-const RADIUS = .3;
+const RADIUS = .32;
 const MASS = 1;
 const FRICTION = 0.15;
 
@@ -80,7 +78,8 @@ const app = new Elysia()
     open(ws) {
         ws.subscribe("game");
         ws.send({ type: 'init', data: ws.id });
-        ws.send({ type: 'config', data: SERVER_CONFIG });
+        var mapDimensions = map.getDimensions();
+        ws.send({ type: 'config', data: { radius: RADIUS * 125, tickRate: TICK_RATE, width: mapDimensions.width, height: mapDimensions.height } });
         ws.send({ type: 'map', data: map.getObjects().map(obj => obj.serialize()) })
         const body = world.createBody({
             type: 'dynamic',

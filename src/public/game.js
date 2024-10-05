@@ -21,8 +21,13 @@ var gameState = {
 }
 
 // can be overriden by server
-var radius = 40;
-var tickRate = 30;
+
+var serverConfig = {
+    radius: 40,
+    tickRate: 30,
+    width: 1920,
+    height: 1080
+}
 
 var PING_INTERVAL = 500;
 var latency = 0;
@@ -177,13 +182,14 @@ app.ticker.add(() => {
     if (players.has(socketId)) {
         const player = players.get(socketId);
         const pos = player.container.position;
+
         // app.stage.position.set(app.screen.width / 2 - pos.x, app.screen.height / 2 - pos.y);
         
     }
 });
 
 // player template using GraphicsContext for performance
-const playerTemplate = new GraphicsContext().circle(0, 0, radius).fill('white').stroke({color:0xAAAAAA,width:radius/5});
+const playerTemplate = new GraphicsContext().circle(0, 0, serverConfig.radius).fill('white').stroke({color:0xAAAAAA,width:serverConfig.radius/5});
 // connect via websocket
 
 var wsUrl;
@@ -241,8 +247,7 @@ socket.addEventListener("message", event => {
             messageText.text = gameState.message;
             break;
         case 'config':
-            radius = message.data.radius;
-            tickRate = message.data.tickRate;
+            serverConfig = message.data;
             break;
         case 'leave':
             var player = players.get(message.data);
@@ -262,7 +267,7 @@ socket.addEventListener("message", event => {
                 }
             });
             chatText.anchor.set(0.5);
-            chatText.position.set(0, -radius-20);
+            chatText.position.set(0, -serverConfig.radius-20);
             player.container.addChild(chatText);
             setTimeout(() => chatText.destroy(), 5000);
             break;
@@ -289,7 +294,7 @@ socket.addEventListener("message", event => {
                     }
                 });
                 player.nameText.anchor.set(0.5);
-                player.nameText.position.set(0, radius+20);
+                player.nameText.position.set(0, serverConfig.radius+20);
     
                 players.set(player.id, player);
                 player.container.addChild(player.nameText);
@@ -448,12 +453,6 @@ document.addEventListener("keyup", function ({ key, code }) {
             break;
         case "KeyD":
             xKeys.delete(Movement.Right);
-            break;
-        case "KeyE":
-            app.ticker.maxFPS += 10;
-            break;
-        case "KeyQ":
-            app.ticker.maxFPS -= 10;
             break;
     }
     sendInput();
