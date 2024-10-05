@@ -22,16 +22,6 @@ const RADIUS = .32;
 const MASS = 1;
 const FRICTION = 0.15;
 
-// define server config to network to clients
-const SERVER_CONFIG = {
-    tickRate: TICK_RATE,
-    speed: SPEED,
-    radius: RADIUS,
-    mass: MASS,
-    friction: FRICTION,
-}
-
-
 // message schema for all websocket messages
 const MESSAGE_SCHEMA = t.Object({
     type: t.String(),
