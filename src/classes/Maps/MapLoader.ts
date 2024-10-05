@@ -1,34 +1,41 @@
 import { Map } from "./Map";
 import { MapObject } from "./MapObject";
-import { RectangleMapObject } from "./RectangleMapObject";
-import { World, Vec2 } from "planck";
+import { World, Vector2, ColliderDesc } from "@dimforge/rapier2d-compat";
 
 class MapLoader {
 
     static loadMapFromJson(json: any, world: World): Map {
         const mapData = json;
-        var objects = new Array<MapObject>();
-        var planckScale = new Vec2(16/mapData.width, 9/mapData.height);
+        let mapSize = new Vector2(mapData.width, mapData.height);
+        let objects = new Array<MapObject>();
 
         // create bound objects
-        objects.push(new RectangleMapObject(world, new Vec2(mapData.width, 10), new Vec2(mapData.width/2, 0), planckScale, 0, 'gray')); // top
-        objects.push(new RectangleMapObject(world, new Vec2(mapData.width, 10), new Vec2(mapData.width/2, mapData.height), planckScale, 0, 'gray')); // bottom
-        objects.push(new RectangleMapObject(world, new Vec2(10, mapData.height), new Vec2(0, mapData.height/2), planckScale, 0, 'gray')); // left
-        objects.push(new RectangleMapObject(world, new Vec2(10, mapData.height), new Vec2(mapData.width, mapData.height/2), planckScale, 0, 'gray')); // right
+        objects.push(this.CreateRectObject(world, mapSize, new Vector2(mapData.width, 10), new Vector2(mapData.width/2, 0), 0, 'gray')); // top
+        objects.push(this.CreateRectObject(world, mapSize, new Vector2(mapData.width, 10), new Vector2(mapData.width/2, mapData.height), 0, 'gray')); // bottom
+        objects.push(this.CreateRectObject(world, mapSize, new Vector2(10, mapData.height), new Vector2(0, mapData.height/2), 0, 'gray')); // left
+        objects.push(this.CreateRectObject(world, mapSize, new Vector2(10, mapData.height), new Vector2(mapData.width, mapData.height/2), 0, 'gray')); // right
 
-        for (var i = 0; i < mapData.objects.length; i++) {
+        for (let i = 0; i < mapData.objects.length; i++) {
             const objectData = mapData.objects[i];
-            if (objectData.type === 'RectangleMapObject') {
-                var properties = objectData.properties;
-                var position = new Vec2(properties.x, properties.y);
-                var size = new Vec2(properties.width, properties.height);
+            if (objectData.type === 'rect') {
+                let properties = objectData.properties;
+                let position = new Vector2(properties.x, properties.y);
+                let size = new Vector2(properties.width, properties.height);
 
-                objects.push(new RectangleMapObject(world, size, position, planckScale, properties.rotation, properties.fillColor, properties.strokeColor, properties.strokeWidth));
+                objects.push(this.CreateRectObject(world, mapSize, size, position, properties.rotation, properties.fillColor, properties.strokeColor, properties.strokeWidth));
             }
         }
 
         const map = new Map(mapData.name, mapData.width, mapData.height, objects);
         return map;
+    }
+
+    static CreateRectObject(world: World, mapSize: Vector2, size: Vector2, position: Vector2, rotation: number, fillColor: string, strokeColor: string = "#000000", strokeWidth: number = 0): MapObject {
+        let scaledSize = new Vector2(size.x / mapSize.x, size.y / mapSize.y);
+        let scaledPosition = new Vector2(position.x / mapSize.x, position.y / mapSize.y);
+        let colliderDesc = ColliderDesc.cuboid(scaledSize.x, scaledSize.y).setTranslation(scaledPosition.x, scaledPosition.y).setRotation(rotation);
+
+        return new MapObject(world, colliderDesc, fillColor, strokeColor, strokeWidth);
     }
 }
 

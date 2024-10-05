@@ -2,8 +2,10 @@ import { Elysia, t } from 'elysia';
 import { staticPlugin } from '@elysiajs/static'
 import { Player }  from "./classes/Player";
 import { GameState } from './classes/GameState';
-import { World, Vec2, Circle, } from 'planck';
 import { MapLoader } from './classes/Maps/MapLoader.ts';
+import Rapier from "@dimforge/rapier2d-compat";
+
+Rapier.init().then(() => {
 
 // DEFINE SERVER CONSTANTS
 const PORT = Number(process.env['PORT'] ?? 3001);
@@ -12,12 +14,8 @@ const PORT = Number(process.env['PORT'] ?? 3001);
 // not the physics engine
 const TICK_RATE = 60;
 
-// define game bound information
-const WIDTH = 16;
-const HEIGHT = 9;
-
 // define player information
-const SPEED = 150;
+const SPEED = 1;
 const RADIUS = .32;
 const MASS = 1;
 const FRICTION = 0.15;
@@ -30,36 +28,9 @@ const MESSAGE_SCHEMA = t.Object({
 
 const gameState = new GameState();
 
-const world = new World({
-    gravity: Vec2(0, 0),
-    allowSleep: false,
-
-});
+const world = new Rapier.World({x: 0, y: 0});
 
 const map = MapLoader.loadMapFromJson(require('./maps/gray.json'), world);
-
-
-world.on('begin-contact', (contact) => {
-    const fixtureA = contact.getFixtureA();
-    const fixtureB = contact.getFixtureB();
-    const bodyA = fixtureA.getBody();
-    const bodyB = fixtureB.getBody();
-
-    const player1 = bodyA.getUserData() as Player;
-    const player2 = bodyB.getUserData() as Player;
-
-    if (player1?.eliminated || player2?.eliminated) return;
-
-    if (player1 && player2) {
-        if (player1.tagger && player1.canTag() && !player2.tagger) {
-            player1.tagger = false;
-            player2.tagger = true;
-        } else if (player2.tagger && player2.canTag() && !player1.tagger) {
-            player2.tagger = false;
-            player1.tagger = true;
-        }
-    }
-});
 
 const app = new Elysia()
 .use(staticPlugin({assets: 'src/public', prefix:'', noCache: true}))
@@ -69,27 +40,22 @@ const app = new Elysia()
         ws.subscribe("game");
         ws.send({ type: 'init', data: ws.id });
         var mapDimensions = map.getDimensions();
-        ws.send({ type: 'config', data: { radius: RADIUS * 125, tickRate: TICK_RATE, width: mapDimensions.width, height: mapDimensions.height } });
+        ws.send({ type: 'config', data: { radius: RADIUS, tickRate: TICK_RATE, width: mapDimensions.width, height: mapDimensions.height } });
         ws.send({ type: 'map', data: map.getObjects().map(obj => obj.serialize()) })
-        const body = world.createBody({
-            type: 'dynamic',
-            position: Vec2(Math.random()*WIDTH, Math.random()*HEIGHT),
-            fixedRotation: true,
-            linearDamping: 7,
-            angularDamping: 0.1,
-            allowSleep: false
-        });
-        body.createFixture({
-            shape: new Circle(RADIUS),
-            friction: FRICTION,
-            density: 1,
-            restitution: 0,
-        });
-        body.setMassData({
-            mass: MASS,
-            center: Vec2(0, 0),
-            I: 1
-        });
+
+
+        const bodyDesc = Rapier.RigidBodyDesc.dynamic()
+        .setTranslation(Math.random()*10, Math.random()*10)
+        .setLinearDamping(0.1);
+
+        const body = world.createRigidBody(bodyDesc);
+
+        const colliderDesc = Rapier.ColliderDesc.ball(RADIUS)
+        .setMass(MASS)
+        .setFriction(FRICTION)
+        .setActiveEvents(Rapier.ActiveEvents.COLLISION_EVENTS);
+
+        world.createCollider(colliderDesc, body);
 
         const player = new Player(ws.id, body);
         gameState.addPlayer(ws.id, player);
@@ -103,10 +69,8 @@ const app = new Elysia()
             case 'update':
                 var player = gameState.getPlayer(ws.id);
                 if (!player) return;
-                var force = Vec2(data.x, data.y);
-                force.normalize();
-                force.mul(SPEED);
-                player.force = force;
+                var force = new Rapier.Vector2(data.x, data.y);
+                player.force = multiply(normalize(force), SPEED);
                 break;
             
             case 'chat':
@@ -125,13 +89,25 @@ const app = new Elysia()
     close(ws) {
         var body = gameState.getPlayer(ws.id)?.body;
         if (body) {
-            world.destroyBody(body);
+            world.removeRigidBody(body);
         }
         gameState.removePlayer(ws.id);
         app.server?.publish("game", JSON.stringify({ type: 'leave', data: ws.id }));
     }
 })
 .listen(PORT);
+
+function normalize(vector2: Rapier.Vector2) {
+    const magnitude = Math.sqrt(vector2.x * vector2.x + vector2.y * vector2.y);
+    if (magnitude === 0) {
+        return new Rapier.Vector2(0, 0);
+    }
+    return new Rapier.Vector2(vector2.x / magnitude, vector2.y / magnitude);
+}
+
+function multiply(vector2: Rapier.Vector2, scalar: number) {
+    return new Rapier.Vector2(vector2.x * scalar, vector2.y * scalar);
+}
 
 setInterval(() => {
     gameState.update();
@@ -146,10 +122,35 @@ console.log(`Server is running on ${app.server?.url}`);
 
 function step() {
     gameState.players.forEach(player => {
-        player.body.applyForce(player.force, player.body.getWorldCenter(), true);
+        player.body.addForce(player.force, true);
     });
 
-    world.step(1 / 60, 10, 8);
+    let eventQueue = new Rapier.EventQueue(true);
+    world.step(eventQueue);
+
+    eventQueue.drainCollisionEvents((handle1, handle2, started) => {
+
+        if (!started){
+            return;
+        }
+
+        const player1 = world.getCollider(handle1).parent()?.userData as Player;
+        const player2 = world.getCollider(handle2).parent()?.userData as Player;
+    
+        if (player1?.eliminated || player2?.eliminated){
+            return;
+        }
+    
+        if (player1 && player2) {
+            if (player1.tagger && player1.canTag() && !player2.tagger) {
+                player1.tagger = false;
+                player2.tagger = true;
+            } else if (player2.tagger && player2.canTag() && !player1.tagger) {
+                player2.tagger = false;
+                player1.tagger = true;
+            }
+        }
+    });
 }
 
-setInterval(step, 1000 / 60);
+setInterval(step, 1000 / 60);});

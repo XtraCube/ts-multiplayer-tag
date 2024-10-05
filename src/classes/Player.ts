@@ -1,12 +1,12 @@
-import { Vec2, Body } from 'planck';
+import { Vector2, RigidBody } from '@dimforge/rapier2d-compat';
 import { CustomTimer } from './CustomTimer';
 
 class Player {
 
     readonly id: string;
-    readonly body: Body;
+    readonly body: RigidBody;
 
-    public force: Vec2;
+    public force: Vector2;
     public wins: number;
 
     public name: string = "";
@@ -15,17 +15,17 @@ class Player {
     private _tagger: boolean;
     private _eliminated: boolean;
 
-    constructor(id: string, body: Body) {
+    constructor(id: string, body: RigidBody) {
         this.id = id;
         this.body = body;
-        this.force = Vec2(0, 0);
+        this.force = new Vector2(0, 0);
         // 16^6 = 16777216 aka max hexadecimal value
         this._color = `${Math.floor(Math.random()*16777215).toString(16)}`;
         this._tagger = false;
         this._eliminated = false;
         this._tagTimer = new CustomTimer(()=>{}, 1000);
         this.wins = 0;
-        this.body.setUserData(this);
+        this.body.userData = this;
     }
 
     public get tagger() : boolean {
@@ -45,10 +45,8 @@ class Player {
 
     public set eliminated(value: boolean) {
         this._eliminated = value;
-        var fixture = this.body.getFixtureList();
-        fixture?.setFilterGroupIndex(value ? 1 : 2);
-        fixture?.setFilterCategoryBits(value ? 2 : 1);
-        fixture?.setFilterMaskBits(value ? 2 : 1);
+        var collider = this.body.collider(0);
+        collider?.setCollisionGroups(value ? 1 : 2);
     }
 
     public canTag() : boolean {
@@ -61,8 +59,8 @@ class Player {
             name: this.name,
             color: this._color,
             position: {
-                x: this.body.getPosition().x * (1920/16),
-                y: this.body.getPosition().y * (1080/9),
+                x: this.body.translation().x * 192,
+                y: this.body.translation().y * 108,
             },
             tagger: this.tagger,
             eliminated: this.eliminated

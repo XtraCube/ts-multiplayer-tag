@@ -233,11 +233,19 @@ socket.addEventListener("message", event => {
             mapObjects.length = 0;
             mapObjects.push(...message.data);
             mapObjects.forEach(obj => {
+
+                var scaled = {
+                    x: obj.x*serverConfig.width,
+                    y: obj.y*serverConfig.height,
+                    width: obj.width*serverConfig.width,
+                    height: obj.height*serverConfig.height,
+                }
+
                 var graphics = new Graphics()
-                .rect(obj.x, obj.y, obj.width, obj.height)
+                .rect(scaled.x, scaled.y, scaled.width, scaled.height)
                 .fill(obj.color)
                 .stroke({color:obj.strokeColor,width:obj.strokeWidth});
-                graphics.pivot.set(obj.width/2, obj.height/2);
+                graphics.pivot.set(scaled.width/2, scaled.height/2);
                 app.stage.addChild(graphics);
                 mapObjects.push(graphics);
             });

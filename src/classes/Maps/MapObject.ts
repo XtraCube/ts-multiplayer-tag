@@ -1,21 +1,29 @@
-import { Body, Vec2 } from 'planck';
+import { ColliderDesc, World } from '@dimforge/rapier2d-compat';
 
-abstract class MapObject {
+class MapObject {
+    colliderDesc: ColliderDesc;
     color: string;
     strokeColor: string;
     strokeWidth: number;
-    planckScale: Vec2;
 
-    abstract body: Body;
-
-    constructor(planckScale: Vec2, color: string, strokeColor: string = "#000000", strokeWidth: number = 0) {
-        this.planckScale = planckScale;
+    constructor(world: World, colliderDesc: ColliderDesc, color: string, strokeColor: string = "#000000", strokeWidth: number = 0) {
         this.color = color;
         this.strokeColor = strokeColor;
         this.strokeWidth = strokeWidth;
+        this.colliderDesc = colliderDesc;
+
+        world.createCollider(this.colliderDesc);
     }
     
-    abstract serialize(): any;
+    serialize() {
+        return {
+            type: 'rectangle',
+            colliderDesc: this.colliderDesc,
+            color: this.color,
+            strokeColor: this.strokeColor,
+            strokeWidth: this.strokeWidth
+        };
+    }
 }
 
 export { MapObject }
