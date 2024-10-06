@@ -13,13 +13,13 @@ const PORT = Number(process.env['PORT'] ?? 3001);
 // not the physics engine
 const TICK_RATE = 60;
 
-// define game bound information
+// define physics bounding information
 const WIDTH = 10;
 const HEIGHT = WIDTH * 9 / 16;
 
 // define player information
 const SPEED = 75;
-const RADIUS = 2*WIDTH/100;
+const RADIUS = WIDTH/50;
 const MASS = 1;
 const FRICTION = 0.15;
 const DAMPING = 8;
@@ -70,8 +70,8 @@ const app = new Elysia()
     open(ws) {
         ws.subscribe("game");
         ws.send({ type: 'init', data: ws.id });
-        var mapDimensions = map.getDimensions();
-        ws.send({ type: 'config', data: { radius: RADIUS, tickRate: TICK_RATE, width: mapDimensions.width, height: mapDimensions.height } });
+        let mapDimensions = map.getDimensions();
+        ws.send({ type: 'config', data: { radius: RADIUS * (mapDimensions.width / WIDTH), tickRate: TICK_RATE, width: mapDimensions.width, height: mapDimensions.height } });
         ws.send({ type: 'map', data: map.getObjects().map(obj => obj.serialize()) })
         let body = world.createBody({
             type: 'dynamic',

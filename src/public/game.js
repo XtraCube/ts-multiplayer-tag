@@ -189,7 +189,7 @@ app.ticker.add(() => {
 });
 
 // player template using GraphicsContext for performance
-const playerTemplate = new GraphicsContext().circle(0, 0, serverConfig.radius).fill('white').stroke({color:0xAAAAAA,width:serverConfig.radius/5});
+let playerTemplate = new GraphicsContext().circle(0, 0, serverConfig.radius).fill('white').stroke({color:0xAAAAAA,width:serverConfig.radius/5});
 // connect via websocket
 
 var wsUrl;
@@ -248,6 +248,7 @@ socket.addEventListener("message", event => {
             break;
         case 'config':
             serverConfig = message.data;
+            playerTemplate = new GraphicsContext().circle(0, 0, serverConfig.radius).fill('white').stroke({color:0xAAAAAA,width:serverConfig.radius/5});
             break;
         case 'leave':
             var player = players.get(message.data);
