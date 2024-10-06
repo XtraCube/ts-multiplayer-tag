@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Xtra Tag</title>
+    <style>
+    body { 
+        margin: 0;   /* Remove body margins */
+        overflow: hidden;
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+        background-color: #334;
+    }
+    canvas {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    p {
+        display:inline-block;
+    }
+    #topBox {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 10%;
+        color: white;
+    }
+    #bottomBox {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 10%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    </style>
+    <script src="pixi.mjs" type="module"></script>
+    <script src="pixi-filters.mjs" type="module"></script>
+</head>
+<body>
+    <div id="topBox">
+        <p> resolution: <span id="resVal">100</span></p>
+        <input type="range" min="20" max="100" value="100" class="slider" id="res">
+    </div>
+    <div id="bottomBox">
+        <input type="text" id="nameInput" placeholder="Set Name">
+        <button id="nameButton">Set Name</button>
+        <input type="text" id="chatInput" placeholder="Type here...">
+        <button id="sendButton">Send</button>
+    </div>
+    <script src="game.js?v=44" type="module"></script>
+</body>
+</html>
