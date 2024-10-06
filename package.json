@@ -11,7 +11,9 @@
   "description": "",
   "dependencies": {
     "@elysiajs/static": "^1.0.3",
+    "@types/nanotimer": "^0.3.2",
     "elysia": "^1.0.22",
+    "nanotimer": "^0.3.15",
     "pixi.js": "^8.1.6",
     "planck": "^1.0.6"
   },

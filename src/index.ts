@@ -4,6 +4,7 @@ import { Player }  from "./classes/Player";
 import { GameState } from './classes/GameState';
 import { World, Vec2, Circle, } from 'planck';
 import { MapLoader } from './classes/Maps/MapLoader.ts';
+import nanotimer from 'nanotimer';
 
 // DEFINE SERVER CONSTANTS
 const PORT = Number(process.env['PORT'] ?? 3001);
@@ -148,8 +149,8 @@ function step() {
     gameState.players.forEach(player => {
         player.body.applyForceToCenter(player.force, true);
     });
-
     world.step(1 / 60, 10, 8);
 }
 
-setInterval(step, 1000 / 60);
+var timer = new nanotimer();
+timer.setInterval(step, '', '16.66667m');

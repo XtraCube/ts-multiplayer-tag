@@ -2,6 +2,17 @@
 
 This is a TypeScript multiplayer tag game project I created for my computer science final project in high school.
 
+
+## if you are reading this, i need your help
+
+There is a weird timing issue on Windows vs Linux. Lemme outline it real quick:
+- On Windows, the physics simulation is consistently slower when using `setInterval`
+- Also on Windows, the physics simulation is inconsistently fast when using `nanotimer`
+- On Linux, the physics simulation is consistently fast when using `setInterval` or `nanotimer`
+
+I've done some minimal research into it but I cba to fix it at the moment.
+If you have info, please DM me on discord (username is xtracube) or make a discussion on this repo. thx!
+
 ## Description
 
 It's like tag and hot potato, or maybe even the cheese touch. You touch someone else to "tag" them or pass along the touch, and every 20 seconds the tagger gets eliminated.
