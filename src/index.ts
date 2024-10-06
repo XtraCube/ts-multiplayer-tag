@@ -18,7 +18,7 @@ const WIDTH = 10;
 const HEIGHT = WIDTH * 9 / 16;
 
 // define player information
-const SPEED = 120;
+const SPEED = 75;
 const RADIUS = 2*WIDTH/100;
 const MASS = 1;
 const FRICTION = 0.15;
